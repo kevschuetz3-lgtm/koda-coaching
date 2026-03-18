@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koda CrossFit — Coach Availability</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+    }
+
+    /* ── Top Fields ── */
+    .top-fields {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .top-fields label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .top-fields input, .top-fields select {
+      padding: 10px 14px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #16213e;
+      color: #fff;
+      font-size: 1rem;
+      width: 100%;
+      appearance: auto;
+    }
+
+    .field-group { flex: 1; min-width: 200px; }
+
+    /* ── Copy Last Week ── */
+    .copy-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .copy-btn {
+      background: #16213e;
+      border: 1px solid #60a5fa;
+      color: #60a5fa;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { background: #1e3a5f; }
+    .copy-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; }
+
+    .copy-status {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    /* ── Grid Table ── */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 24px 0 8px;
+      padding-left: 4px;
+    }
+
+    .grid-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: auto;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #16213e;
+      padding: 10px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      border-bottom: 2px solid #333;
+      position: sticky;
+      top: 0;
+    }
+
+    th:first-child {
+      text-align: left;
+      padding-left: 12px;
+    }
+
+    td {
+      text-align: center;
+      padding: 0;
+      border-bottom: 1px solid #2a2a4a;
+    }
+
+    td:first-child {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    tr:hover { background: rgba(255,255,255,0.03); }
+
+    /* ── Color-coded rows ── */
+    .type-crossfit td:first-child { border-left: 4px solid #f87171; color: #f87171; }
+    .type-hyrox td:first-child { border-left: 4px solid #facc15; color: #facc15; }
+    .type-specialty td:first-child { border-left: 4px solid #fb923c; color: #fb923c; }
+    .type-kodafit td:first-child { border-left: 4px solid #c084fc; color: #c084fc; }
+    .type-kodashred td:first-child { border-left: 4px solid #2dd4bf; color: #2dd4bf; }
+    .type-kids td:first-child { border-left: 4px solid #f472b6; color: #f472b6; }
+    .type-kratos td:first-child { border-left: 4px solid #f87171; color: #f87171; }
+    .type-opengym td:first-child { border-left: 4px solid #94a3b8; color: #94a3b8; }
+
+    /* ── Checkbox Styling ── */
+    .check-cell {
+      width: 50px;
+      cursor: pointer;
+      padding: 8px 0;
+      user-select: none;
+    }
+
+    .check-cell input[type="checkbox"] {
+      display: none;
+    }
+
+    .check-cell .box {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 2px solid #555;
+      background: #16213e;
+      transition: all 0.15s ease;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .check-cell input:checked ~ .box {
+      border-color: #4ade80;
+      background: #166534;
+    }
+
+    .check-cell input:checked ~ .box::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #4ade80;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .check-cell:active .box {
+      transform: scale(0.9);
+    }
+
+    /* ── Notes & Submit ── */
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #16213e;
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 70px;
+      margin-top: 8px;
+    }
+
+    .notes-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      margin: 28px auto 40px;
+      padding: 14px;
+      background: #4ade80;
+      color: #1a1a2e;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: #22c55e; }
+    .submit-btn:disabled { background: #555; cursor: not-allowed; }
+
+    /* ── Success Message ── */
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .success-msg h2 {
+      color: #4ade80;
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+
+    .success-msg p { color: #aaa; margin-bottom: 16px; }
+
+    .submit-another-btn {
+      background: #16213e;
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    /* ── Select All Row ── */
+    .select-all-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-bottom: 4px;
+      padding-right: 4px;
+    }
+
+    .select-all-btn {
+      background: #16213e;
+      border: 1px solid #444;
+      color: #aaa;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .select-all-btn:hover { border-color: #4ade80; color: #4ade80; }
+
+    /* ── Loading overlay ── */
+    .loading {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,0.9);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+    }
+
+    .loading.active { display: flex; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Koda CrossFit</h1>
+    <p class="subtitle">Weekly Coach Availability — Check the classes you can coach</p>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#f87171"></div> CrossFit</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#facc15"></div> Hyrox</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#fb923c"></div> Specialty</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#c084fc"></div> Kodafit</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#2dd4bf"></div> KodaShred</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f472b6"></div> Kids/Teens</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f87171"></div> Kratos</div>
+    </div>
+
+    <form id="availForm">
+      <!-- Name & Week -->
+      <div class="top-fields">
+        <div class="field-group">
+          <label for="coachName">Your Name</label>
+          <select id="coachName" required>
+            <option value="">— Select your name —</option>
+            <option>Nate</option>
+            <option>Greg</option>
+            <option>Jessica</option>
+            <option>Doc Em</option>
+            <option>Casey</option>
+            <option>Maggie</option>
+            <option>Riley</option>
+            <option>Jamie</option>
+            <option>Dani</option>
+            <option>Isabelle</option>
+            <option>William</option>
+            <option>Kevin</option>
+            <option>Scott</option>
+            <option>Tracey</option>
+            <option>Elissa</option>
+            <option>Kaylie</option>
+            <option>Tyler</option>
+            <option>Roxanne</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="weekOf">Week of (Monday's date)</label>
+          <input type="date" id="weekOf" required>
+        </div>
+      </div>
+
+      <!-- Copy Last Week -->
+      <div class="copy-row">
+        <button type="button" class="copy-btn" id="copyBtn" onclick="copyLastWeek()">Copy Last Week's Availability</button>
+        <span class="copy-status" id="copyStatus"></span>
+      </div>
+
+      <!-- ═══ WEEKDAY GRID ═══ -->
+      <div class="section-title">Monday – Friday</div>
+      <div class="select-all-row">
+        <button type="button" class="select-all-btn" onclick="selectAllInTable('weekday-grid')">Select All</button>
+        <button type="button" class="select-all-btn" onclick="clearAllInTable('weekday-grid')">Clear All</button>
+      </div>
+      <div class="grid-wrapper">
+        <table id="weekday-grid">
+          <thead>
+            <tr><th>Class Time</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- ═══ SATURDAY GRID ═══ -->
+      <div class="section-title">Saturday</div>
+      <div class="select-all-row">
+        <button type="button" class="select-all-btn" onclick="selectAllInTable('sat-grid')">Select All</button>
+        <button type="button" class="select-all-btn" onclick="clearAllInTable('sat-grid')">Clear All</button>
+      </div>
+      <div class="grid-wrapper">
+        <table id="sat-grid">
+          <thead>
+            <tr><th>Class Time</th><th>Sat</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- ═══ SUNDAY GRID ═══ -->
+      <div class="section-title">Sunday</div>
+      <div class="grid-wrapper">
+        <table id="sun-grid">
+          <thead>
+            <tr><th>Class Time</th><th>Sun</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Notes -->
+      <label class="notes-label" for="notes">Anything else I should know?</label>
+      <textarea id="notes" placeholder="Preferred times, conflicts, etc."></textarea>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Submit Availability</button>
+    </form>
+
+    <div class="success-msg" id="successMsg">
+      <h2>You're all set!</h2>
+      <p>Your availability has been submitted.</p>
+      <button class="submit-another-btn" onclick="resetForm()">Submit for Another Week</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loadingOverlay">Loading...</div>
+
+  <script>
+    // ══════════════════════════════════════════════════
+    // CONFIGURATION — Replace with your deployed Apps Script URL
+    // ══════════════════════════════════════════════════
+    var SCRIPT_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
+
+    // ── Slot Definitions ──
+    var weekdaySlots = [
+      ["5:00 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["5:30 AM — Specialty", "specialty", [1,1,1,1,1]],
+      ["5:30 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["6:00 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["6:30 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["7:45 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["8:45 AM — Kodafit",   "kodafit",   [1,1,1,1,1]],
+      ["9:00 AM — Hyrox",     "hyrox",     [1,1,1,1,1]],
+      ["9:45 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["11:00 AM — CrossFit", "crossfit",  [1,1,1,1,1]],
+      ["12:15 PM — CrossFit", "crossfit",  [1,1,1,1,1]],
+      ["Kids/Teens",          "kids",      [1,1,1,1,1]],
+      ["4:00 PM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["4:30 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["5:00 PM — CrossFit",  "crossfit",  [0,0,0,0,1]],
+      ["5:15 PM — KodaShred", "kodashred", [1,0,1,0,1]],
+      ["5:15 PM — Hyrox",     "hyrox",     [0,1,0,1,0]],
+      ["5:15 PM — Specialty", "specialty", [1,1,1,1,1]],
+      ["5:45 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["6:00 PM — CrossFit",  "crossfit",  [0,0,0,0,1]],
+      ["6:30 PM — CrossFit",  "crossfit",  [1,1,1,1,1]]
+    ];
+
+    var satSlots = [
+      ["6:00 AM — Hyrox",     "hyrox"],
+      ["7:00 AM — CrossFit",  "crossfit"],
+      ["8:00 AM — CrossFit",  "crossfit"],
+      ["8:00 AM — Hyrox",     "hyrox"],
+      ["9:00 AM — CrossFit",  "crossfit"],
+      ["9:00 AM — Hyrox",     "hyrox"],
+      ["10:00 AM — CrossFit", "crossfit"],
+      ["12:00 PM — Kratos",   "kratos"]
+    ];
+
+    var sunSlots = [
+      ["Koda Kids", "kids"]
+    ];
+
+    var dayNames = ["Mon","Tue","Wed","Thu","Fri"];
+
+    // ── Build Weekday Grid ──
+    var wkBody = document.querySelector("#weekday-grid tbody");
+    weekdaySlots.forEach(function(slot) {
+      var tr = document.createElement("tr");
+      tr.className = "type-" + slot[1];
+      var labelTd = document.createElement("td");
+      labelTd.textContent = slot[0];
+      tr.appendChild(labelTd);
+
+      for (var d = 0; d < 5; d++) {
+        var td = document.createElement("td");
+        if (slot[2][d]) {
+          td.className = "check-cell";
+          var id = slug(slot[0]) + "_" + dayNames[d];
+          td.innerHTML = '<input type="checkbox" name="' + id + '"><span class="box"></span>';
+          td.onclick = function() { var cb = this.querySelector("input"); cb.checked = !cb.checked; };
+        }
+        tr.appendChild(td);
+      }
+      wkBody.appendChild(tr);
+    });
+
+    // ── Build Saturday Grid ──
+    var satBody = document.querySelector("#sat-grid tbody");
+    satSlots.forEach(function(slot) {
+      var tr = document.createElement("tr");
+      tr.className = "type-" + slot[1];
+      var labelTd = document.createElement("td");
+      labelTd.textContent = slot[0];
+      tr.appendChild(labelTd);
+
+      var td = document.createElement("td");
+      td.className = "check-cell";
+      var id = slug(slot[0]) + "_Sat";
+      td.innerHTML = '<input type="checkbox" name="' + id + '"><span class="box"></span>';
+      td.onclick = function() { var cb = this.querySelector("input"); cb.checked = !cb.checked; };
+      tr.appendChild(td);
+      satBody.appendChild(tr);
+    });
+
+    // ── Build Sunday Grid ──
+    var sunBody = document.querySelector("#sun-grid tbody");
+    sunSlots.forEach(function(slot) {
+      var tr = document.createElement("tr");
+      tr.className = "type-" + slot[1];
+      var labelTd = document.createElement("td");
+      labelTd.textContent = slot[0];
+      tr.appendChild(labelTd);
+
+      var td = document.createElement("td");
+      td.className = "check-cell";
+      var id = slug(slot[0]) + "_Sun";
+      td.innerHTML = '<input type="checkbox" name="' + id + '"><span class="box"></span>';
+      td.onclick = function() { var cb = this.querySelector("input"); cb.checked = !cb.checked; };
+      tr.appendChild(td);
+      sunBody.appendChild(tr);
+    });
+
+    // ── Helpers ──
+    function slug(s) {
+      return s.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+    }
+
+    function selectAllInTable(tableId) {
+      document.querySelectorAll("#" + tableId + " input[type=checkbox]").forEach(function(cb) { cb.checked = true; });
+    }
+
+    function clearAllInTable(tableId) {
+      document.querySelectorAll("#" + tableId + " input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
+    }
+
+    // ── Auto-set next Monday's date ──
+    (function() {
+      var today = new Date();
+      var day = today.getDay();
+      var diff = (day === 0) ? 1 : 8 - day;
+      var nextMon = new Date(today);
+      nextMon.setDate(today.getDate() + diff);
+      document.getElementById("weekOf").value = nextMon.toISOString().slice(0, 10);
+    })();
+
+    // ── Copy Last Week ──
+    function copyLastWeek() {
+      var name = document.getElementById("coachName").value;
+      if (!name) {
+        document.getElementById("copyStatus").textContent = "Please select your name first.";
+        return;
+      }
+
+      if (SCRIPT_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL") {
+        document.getElementById("copyStatus").textContent = "Backend not connected yet.";
+        return;
+      }
+
+      var btn = document.getElementById("copyBtn");
+      btn.disabled = true;
+      document.getElementById("copyStatus").textContent = "Loading...";
+
+      fetch(SCRIPT_URL + "?action=getLastWeek&coach=" + encodeURIComponent(name))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.slots && data.slots.length > 0) {
+            // Clear all first
+            document.querySelectorAll("input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
+            // Check the ones from last week
+            data.slots.forEach(function(slotName) {
+              var cb = document.querySelector('input[name="' + slotName + '"]');
+              if (cb) cb.checked = true;
+            });
+            document.getElementById("copyStatus").textContent = "Loaded " + data.slots.length + " slots from last week.";
+          } else {
+            document.getElementById("copyStatus").textContent = "No previous submission found.";
+          }
+        })
+        .catch(function() {
+          document.getElementById("copyStatus").textContent = "Error loading — try again.";
+        })
+        .finally(function() { btn.disabled = false; });
+    }
+
+    // ── Form Submission ──
+    document.getElementById("availForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      var data = {
+        coachName: document.getElementById("coachName").value,
+        weekOf: document.getElementById("weekOf").value,
+        notes: document.getElementById("notes").value,
+        slots: []
+      };
+
+      document.querySelectorAll("input[type=checkbox]:checked").forEach(function(cb) {
+        data.slots.push(cb.name);
+      });
+
+      if (data.slots.length === 0) {
+        alert("You haven't selected any classes. Please check the times you're available.");
+        return;
+      }
+
+      var btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
+
+      if (SCRIPT_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL") {
+        console.log("Form data:", JSON.stringify(data, null, 2));
+        showSuccess();
+        return;
+      }
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(data)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.status === "ok") {
+          showSuccess();
+        } else {
+          throw new Error(resp.error || "Unknown error");
+        }
+      })
+      .catch(function(err) {
+        alert("Error submitting — please try again.\n" + err);
+        btn.disabled = false;
+        btn.textContent = "Submit Availability";
+      });
+    });
+
+    function showSuccess() {
+      document.getElementById("availForm").style.display = "none";
+      document.getElementById("successMsg").style.display = "block";
+    }
+
+    function resetForm() {
+      document.getElementById("successMsg").style.display = "none";
+      document.getElementById("availForm").style.display = "block";
+      document.getElementById("submitBtn").disabled = false;
+      document.getElementById("submitBtn").textContent = "Submit Availability";
+      document.querySelectorAll("input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
+      document.getElementById("notes").value = "";
+    }
+  </script>
+</body>
+</html>
