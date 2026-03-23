@@ -517,14 +517,29 @@
       document.querySelectorAll("#" + tableId + " input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
     }
 
-    // ── Auto-set next Monday's date ──
+    // ── Auto-set next Monday and restrict to Mondays only ──
     (function() {
       var today = new Date();
       var day = today.getDay();
       var diff = (day === 0) ? 1 : 8 - day;
       var nextMon = new Date(today);
       nextMon.setDate(today.getDate() + diff);
-      document.getElementById("weekOf").value = nextMon.toISOString().slice(0, 10);
+      var weekOfInput = document.getElementById("weekOf");
+      weekOfInput.value = nextMon.toISOString().slice(0, 10);
+
+      // Only allow selecting Mondays
+      weekOfInput.addEventListener("input", function() {
+        var selected = new Date(this.value + "T12:00:00");
+        if (selected.getDay() !== 1) {
+          // Snap to the next Monday
+          var d = selected.getDay();
+          var toMon = (d === 0) ? 1 : 8 - d;
+          selected.setDate(selected.getDate() + toMon);
+          this.value = selected.toISOString().slice(0, 10);
+          document.getElementById("copyStatus").textContent = "Date adjusted to Monday.";
+          setTimeout(function() { document.getElementById("copyStatus").textContent = ""; }, 2000);
+        }
+      });
     })();
 
     // ── No Availability ──
