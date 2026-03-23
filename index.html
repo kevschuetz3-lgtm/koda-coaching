@@ -366,9 +366,10 @@
         </div>
       </div>
 
-      <!-- Copy Last Week -->
+      <!-- Action buttons -->
       <div class="copy-row">
         <button type="button" class="copy-btn" id="copyBtn" onclick="copyLastWeek()">Copy Last Week's Availability</button>
+        <button type="button" class="copy-btn" id="noAvailBtn" onclick="submitNoAvailability()" style="border-color:#f87171;color:#f87171;">No Availability This Week</button>
         <span class="copy-status" id="copyStatus"></span>
       </div>
 
@@ -525,6 +526,50 @@
       nextMon.setDate(today.getDate() + diff);
       document.getElementById("weekOf").value = nextMon.toISOString().slice(0, 10);
     })();
+
+    // ── No Availability ──
+    function submitNoAvailability() {
+      var name = document.getElementById("coachName").value;
+      if (!name) {
+        document.getElementById("copyStatus").textContent = "Please select your name first.";
+        return;
+      }
+
+      if (!confirm("Submit that you have NO availability for this week?")) return;
+
+      var data = {
+        coachName: name,
+        weekOf: document.getElementById("weekOf").value,
+        notes: "NO AVAILABILITY THIS WEEK",
+        slots: []
+      };
+
+      var btn = document.getElementById("noAvailBtn");
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
+
+      if (SCRIPT_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL") {
+        console.log("No availability:", JSON.stringify(data));
+        showSuccess();
+        return;
+      }
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(data)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(resp) {
+        if (resp.status === "ok") showSuccess();
+        else throw new Error(resp.error || "Unknown error");
+      })
+      .catch(function(err) {
+        alert("Error submitting — please try again.\n" + err);
+        btn.disabled = false;
+        btn.textContent = "No Availability This Week";
+      });
+    }
 
     // ── Copy Last Week ──
     function copyLastWeek() {
