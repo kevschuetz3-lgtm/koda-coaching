@@ -571,14 +571,11 @@
 
       fetch(SCRIPT_URL, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(data)
       })
-      .then(function(r) { return r.json(); })
-      .then(function(resp) {
-        if (resp.status === "ok") showSuccess();
-        else throw new Error(resp.error || "Unknown error");
-      })
+      .then(function() { showSuccess(); })
       .catch(function(err) {
         alert("Error submitting — please try again.\n" + err);
         btn.disabled = false;
@@ -657,17 +654,11 @@
 
       fetch(SCRIPT_URL, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(data)
       })
-      .then(function(r) { return r.json(); })
-      .then(function(resp) {
-        if (resp.status === "ok") {
-          showSuccess();
-        } else {
-          throw new Error(resp.error || "Unknown error");
-        }
-      })
+      .then(function() { showSuccess(); })
       .catch(function(err) {
         alert("Error submitting — please try again.\n" + err);
         btn.disabled = false;
