@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Koda CrossFit — Schedule 3/23/2026</title>
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Calibri, -apple-system, sans-serif;
+      background: #fff;
+      color: #000;
+      padding: 20px;
+      font-size: 11px;
+    }
+    h1 { text-align: center; font-size: 18px; margin-bottom: 12px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 4px 5px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 10px;
+    }
+    th {
+      background: #d9e2f3;
+      font-weight: 700;
+      font-size: 10px;
+    }
+    col.coach-col { width: 80px; }
+    col.time-col { width: 85px; }
+    col.day-col { width: 70px; }
+    col.sat-col { width: 80px; }
+
+    td.time-cell {
+      font-weight: 700;
+      text-align: left;
+      padding-left: 6px;
+      font-size: 9.5px;
+      background: #f2f2f2;
+    }
+    td.empty-row {
+      background: #f2f2f2;
+      height: 18px;
+    }
+
+    /* Coach name cells in schedule grid */
+    td.coach-cell {
+      font-weight: 600;
+      font-size: 9.5px;
+    }
+    td.unfilled {
+      color: #cc0000;
+      font-style: italic;
+      font-size: 8px;
+    }
+
+    /* Coach color legend column */
+    .c-Kevin { background: #00b050; color: #fff; }
+    .c-William { background: #ff0000; color: #fff; }
+    .c-Kaylie { background: #4472c4; color: #fff; }
+    .c-Tracey { background: #002060; color: #fff; }
+    .c-Riley { background: #00b050; color: #fff; }
+    .c-Casey { background: #ffc000; color: #000; }
+    .c-Elissa { background: #a6a6a6; color: #fff; }
+    .c-Maggie { background: #70ad47; color: #fff; }
+    .c-Natalie { background: #ed7d31; color: #fff; }
+    .c-Roxanne { background: #7030a0; color: #fff; }
+    .c-Tyler { background: #5b9bd5; color: #fff; }
+    .c-Kylie { background: #9dc3e6; color: #000; }
+    .c-Scott { background: #4472c4; color: #fff; }
+    .c-DocEm { background: #404040; color: #fff; }
+    .c-Greg { background: #548235; color: #fff; }
+    .c-Isabelle { background: #00b0f0; color: #fff; }
+    .c-Emily { background: #ff00ff; color: #fff; }
+    .c-Jamie { background: #c00000; color: #fff; }
+    .c-Jessica { background: #ff6699; color: #fff; }
+    .c-Nate { background: #0070c0; color: #fff; }
+    .c-Dani { background: #cc00cc; color: #fff; }
+
+    /* Inline coach name colors in schedule cells — bright, matching left column */
+    .sched-Kevin { background: #00b050; color: #fff; }
+    .sched-William { background: #ff0000; color: #fff; }
+    .sched-Kaylie { background: #4472c4; color: #fff; }
+    .sched-Tracey { background: #002060; color: #fff; }
+    .sched-Riley { background: #00b050; color: #fff; }
+    .sched-Casey { background: #ffc000; color: #000; }
+    .sched-Elissa { background: #a6a6a6; color: #fff; }
+    .sched-Maggie { background: #70ad47; color: #fff; }
+    .sched-Roxanne { background: #7030a0; color: #fff; }
+    .sched-Scott { background: #4472c4; color: #fff; }
+    .sched-DocEm { background: #404040; color: #fff; }
+    .sched-Greg { background: #548235; color: #fff; }
+    .sched-Isabelle { background: #00b0f0; color: #fff; }
+    .sched-Jamie { background: #c00000; color: #fff; }
+    .sched-Jessica { background: #ff6699; color: #fff; }
+    .sched-Nate { background: #0070c0; color: #fff; }
+    .sched-Dani { background: #cc00cc; color: #fff; }
+
+    .summary { margin-top: 16px; }
+    .summary th { font-size: 9px; }
+    .summary td { font-size: 9px; }
+    .below-min { color: #cc0000; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<h1>Koda CrossFit — Week of March 23, 2026</h1>
+
+<table>
+  <colgroup>
+    <col class="coach-col">
+    <col class="time-col">
+    <col class="day-col">
+    <col class="day-col">
+    <col class="day-col">
+    <col class="day-col">
+    <col class="day-col">
+    <col class="sat-col">
+  </colgroup>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Class Time</th>
+      <th>Mon</th>
+      <th>Tues</th>
+      <th>Wed</th>
+      <th>Thur</th>
+      <th>Fri</th>
+      <th>Sat</th>
+    </tr>
+  </thead>
+  <tbody id="grid"></tbody>
+</table>
+
+<script>
+const schedule = {"9_45_AM_CrossFit_Thu":"Doc Em","11_00_AM_CrossFit_Thu":"Doc Em","12_15_PM_CrossFit_Thu":"Doc Em","5_30_AM_KodaShred_Mon":"Casey","5_30_AM_Hyrox_Thu":"Casey","8_45_AM_Kodafit_Mon":"Kaylie","8_45_AM_Kodafit_Wed":"Kaylie","8_45_AM_Kodafit_Fri":"Kaylie","6_30_PM_CrossFit_Mon":"Riley","5_15_PM_KodaShred_Mon":"Jessica","5_00_AM_CrossFit_Tue":"Riley","6_00_AM_CrossFit_Tue":"Riley","5_30_AM_CrossFit_Tue":"Greg","6_30_AM_CrossFit_Tue":"Greg","7_45_AM_CrossFit_Tue":"Greg","5_30_AM_Hyrox_Tue":"Jamie","9_45_AM_CrossFit_Tue":"Riley","11_00_AM_CrossFit_Tue":"Riley","12_15_PM_CrossFit_Tue":"Riley","4_00_PM_CrossFit_Tue":"Riley","5_15_PM_CrossFit_Tue":"Riley","6_30_PM_CrossFit_Tue":"Riley","3_30_PM_CrossFit_Tue":"Greg","4_30_PM_CrossFit_Tue":"Greg","5_45_PM_CrossFit_Tue":"Greg","5_00_AM_CrossFit_Wed":"Jamie","6_00_AM_CrossFit_Wed":"Jamie","5_30_AM_CrossFit_Wed":"Greg","6_30_AM_CrossFit_Wed":"Greg","7_45_AM_CrossFit_Wed":"Greg","9_45_AM_CrossFit_Wed":"Isabelle","11_00_AM_CrossFit_Wed":"Isabelle","12_15_PM_CrossFit_Wed":"Isabelle","4_00_PM_CrossFit_Wed":"Jamie","5_15_PM_CrossFit_Wed":"Jamie","6_30_PM_CrossFit_Wed":"Jamie","3_30_PM_CrossFit_Wed":"Dani","4_30_PM_CrossFit_Wed":"Dani","5_45_PM_CrossFit_Wed":"Dani","5_15_PM_KodaShred_Wed":"Jessica","5_00_AM_CrossFit_Thu":"Jamie","6_00_AM_CrossFit_Thu":"Jamie","5_30_AM_CrossFit_Thu":"Dani","6_30_AM_CrossFit_Thu":"Dani","7_45_AM_CrossFit_Thu":"Dani","9_00_AM_Hyrox_Thu":"Riley","4_00_PM_CrossFit_Thu":"Jessica","5_15_PM_CrossFit_Thu":"Jessica","6_30_PM_CrossFit_Thu":"Jessica","3_30_PM_CrossFit_Thu":"Greg","4_30_PM_CrossFit_Thu":"Greg","5_45_PM_CrossFit_Thu":"Greg","5_00_AM_CrossFit_Fri":"Riley","6_00_AM_CrossFit_Fri":"Riley","5_30_AM_CrossFit_Fri":"Jamie","6_30_AM_CrossFit_Fri":"Jamie","7_45_AM_CrossFit_Fri":"Jamie","5_30_AM_KodaShred_Fri":"William","9_45_AM_CrossFit_Fri":"Greg","11_00_AM_CrossFit_Fri":"Greg","12_15_PM_CrossFit_Fri":"Greg","4_00_PM_CrossFit_Fri":"Dani","5_00_PM_CrossFit_Fri":"Dani","6_00_PM_CrossFit_Fri":"Dani","9_00_AM_Hyrox_Sat":"Tracey","6_00_AM_Hyrox_Sat":"Riley","7_00_AM_CrossFit_Sat":"Riley","8_00_AM_CrossFit_Sat":"Jamie","8_00_AM_Hyrox_Sat":"Tracey","9_00_AM_CrossFit_Sat":"Jamie","10_00_AM_CrossFit_Sat":"Jamie","12_00_PM_Kratos_Sat":"Riley","5_00_AM_CrossFit_Mon":"Kevin","6_00_AM_CrossFit_Mon":"Kevin","9_00_AM_Hyrox_Mon":"Kevin","3_30_PM_CrossFit_Mon":"Kevin","4_30_PM_CrossFit_Mon":"Kevin","5_45_PM_CrossFit_Mon":"Kevin","5_30_AM_CrossFit_Mon":"Isabelle","6_30_AM_CrossFit_Mon":"Isabelle","7_45_AM_CrossFit_Mon":"Isabelle","9_45_AM_CrossFit_Mon":"Isabelle","11_00_AM_CrossFit_Mon":"Isabelle","12_15_PM_CrossFit_Mon":"Isabelle","4_00_PM_CrossFit_Mon":"Tracey","5_15_PM_CrossFit_Mon":"Tracey","5_30_AM_KodaShred_Wed":"William"};
+
+const COACH_COLORS = {
+  "Kevin":"c-Kevin","William":"c-William","Kaylie":"c-Kaylie","Tracey":"c-Tracey",
+  "Riley":"c-Riley","Casey":"c-Casey","Elissa":"c-Elissa","Maggie":"c-Maggie",
+  "Natalie":"c-Natalie","Roxanne":"c-Roxanne","Tyler":"c-Tyler","Kylie":"c-Kylie",
+  "Scott":"c-Scott","Doc Em":"c-DocEm","Greg":"c-Greg","Isabelle":"c-Isabelle",
+  "Emily":"c-Emily","Jamie":"c-Jamie","Jessica":"c-Jessica","Nate":"c-Nate","Dani":"c-Dani"
+};
+const SCHED_COLORS = {
+  "Kevin":"sched-Kevin","William":"sched-William","Kaylie":"sched-Kaylie","Tracey":"sched-Tracey",
+  "Riley":"sched-Riley","Casey":"sched-Casey","Elissa":"sched-Elissa","Maggie":"sched-Maggie",
+  "Roxanne":"sched-Roxanne","Scott":"sched-Scott","Doc Em":"sched-DocEm","Greg":"sched-Greg",
+  "Isabelle":"sched-Isabelle","Jamie":"sched-Jamie","Jessica":"sched-Jessica","Nate":"sched-Nate","Dani":"sched-Dani"
+};
+
+// Coach legend order (left column)
+const coachOrder = [
+  "Kevin","William","Kaylie","Tracey","Riley","Casey","Elissa","Maggie",
+  "Natalie","Roxanne","Tyler","Kylie","Scott","Doc Em","Greg","Isabelle",
+  "Emily","","Jamie","Jessica","Nate","","Dani","Nate"
+];
+
+// Row definitions: [timeLabel, slotPrefix (for lookup), dayMask (MTWRF Sat), type]
+// dayMask: array of 6 bools [Mon,Tue,Wed,Thu,Fri,Sat]
+const rows = [
+  // [timeLabel, slotPrefix, dayMask[MTWRF], type, satLabel, satSlotPrefix]
+  ["5:00 AM",            "5_00_AM_CrossFit",  [1,1,1,1,1], null, "6:00 AM\nHyrox", "6_00_AM_Hyrox"],
+  ["5:30 AM\nKodaShred", "5_30_AM_KodaShred", [1,0,1,0,1], null, "7:00 AM",        "7_00_AM_CrossFit"],
+  ["5:30 AM\nHyrox",     "5_30_AM_Hyrox",     [0,1,0,1,0], null, "8:00 AM",        "8_00_AM_CrossFit"],
+  ["5:30 AM",            "5_30_AM_CrossFit",  [1,1,1,1,1], null, "8:00 AM\nHyrox", "8_00_AM_Hyrox"],
+  ["6:00 AM",            "6_00_AM_CrossFit",  [1,1,1,1,1], null, "9:00 AM",        "9_00_AM_CrossFit"],
+  ["6:30 AM",            "6_30_AM_CrossFit",  [1,1,1,1,1], null, "9:00 AM\nHyrox", "9_00_AM_Hyrox"],
+  ["7:45 AM",            "7_45_AM_CrossFit",  [1,1,1,1,1], null, "10:00 AM",       "10_00_AM_CrossFit"],
+  ["8:45 AM\nKodafit",   "8_45_AM_Kodafit",   [1,0,1,0,1], null, null, null],
+  ["9:00 AM\nHyrox",     "9_00_AM_Hyrox",     [1,0,0,1,0], null, null, null],
+  ["7:30 AM\nWomen's",   null,                [0,0,0,0,0], null, null, null],
+  ["8:45 AM\nWomen's",   null,                [0,0,0,0,0], null, null, null],
+  ["9:45 AM",            "9_45_AM_CrossFit",  [1,1,1,1,1], null, null, null],
+  ["11:00 AM",           "11_00_AM_CrossFit", [1,1,1,1,1], null, null, null],
+  ["12:15 PM",           "12_15_PM_CrossFit", [1,1,1,1,1], null, null, null],
+  ["Kids/Teens",         null,                [0,0,0,0,0], null, null, null],
+  ["4:00 PM\nWomen's",   null,                [0,0,0,0,0], null, null, null],
+  ["5:00 PM\nWomen's",   null,                [0,0,0,0,0], null, null, null],
+  ["3:30 PM",            "3_30_PM_CrossFit",  [1,1,1,1,0], null, null, null],
+  ["4:00 PM",            "4_00_PM_CrossFit",  [1,1,1,1,1], null, null, null],
+  ["4:30 PM",            "4_30_PM_CrossFit",  [1,1,1,1,0], "fri5", null, null],
+  ["5:15 PM\nCrossFit",  "5_15_PM_CrossFit",  [1,1,1,1,0], null, null, null],
+  ["5:15 PM\nKodaShred", "5_15_PM_KodaShred", [1,0,1,0,0], null, null, null],
+  ["5:45 PM",            "5_45_PM_CrossFit",  [1,1,1,1,0], "fri6", null, null],
+  ["6:30 PM",            "6_30_PM_CrossFit",  [1,1,1,1,0], null, null, null],
+];
+
+const days = ["Mon","Tue","Wed","Thu","Fri"];
+const tbody = document.getElementById("grid");
+
+function lookup(slot) {
+  return schedule[slot] || null;
+}
+
+function coachCell(name) {
+  if (!name) return '<td></td>';
+  const cls = SCHED_COLORS[name] || '';
+  return `<td class="coach-cell ${cls}">${name}</td>`;
+}
+
+rows.forEach((row, idx) => {
+  const tr = document.createElement("tr");
+
+  // Coach legend column
+  const coachName = idx < coachOrder.length ? coachOrder[idx] : "";
+  if (coachName) {
+    const cls = COACH_COLORS[coachName] || '';
+    tr.innerHTML = `<td class="${cls}" style="font-weight:700;font-size:9px;">${coachName}</td>`;
+  } else {
+    tr.innerHTML = '<td></td>';
+  }
+
+  // Time cell
+  tr.innerHTML += `<td class="time-cell">${row[0].replace(/\n/g,'<br>')}</td>`;
+
+  const slotBase = row[1];
+  const dayMask = row[2];
+  const type = row[3];
+
+  // Weekday cells
+  for (let d = 0; d < 5; d++) {
+    if (!dayMask[d] || !slotBase) {
+      tr.innerHTML += '<td></td>';
+      continue;
+    }
+
+    const dayName = days[d];
+
+    if (type === "fri5" && d === 4) {
+      // Friday: 5:00 PM instead of 4:30
+      const s = "5_00_PM_CrossFit_Fri";
+      tr.innerHTML += coachCell(lookup(s));
+    } else if (type === "fri6" && d === 4) {
+      // Friday: 6:00 PM instead of 5:45
+      const s = "6_00_PM_CrossFit_Fri";
+      tr.innerHTML += coachCell(lookup(s));
+    } else {
+      const slot = slotBase + "_" + dayName;
+      tr.innerHTML += coachCell(lookup(slot));
+    }
+  }
+
+  // Saturday cell
+  const satLabel = row[4];
+  const satSlot = row[5];
+  if (satSlot) {
+    const coach = lookup(satSlot + "_Sat");
+    if (coach) {
+      const cls = SCHED_COLORS[coach] || '';
+      tr.innerHTML += `<td class="coach-cell ${cls}">${coach}</td>`;
+    } else {
+      tr.innerHTML += `<td class="unfilled">${satLabel ? satLabel.replace(/\n/g,'<br>') : ''}</td>`;
+    }
+  } else {
+    tr.innerHTML += '<td></td>';
+  }
+
+  tbody.appendChild(tr);
+});
+</script>
+
+</body>
+</html>

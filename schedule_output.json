@@ -1,0 +1,318 @@
+{
+  "schedule": {
+    "5_30_AM_CrossFit_Tue": "Greg",
+    "6_30_AM_CrossFit_Tue": "Greg",
+    "7_45_AM_CrossFit_Tue": "Greg",
+    "5_30_AM_Hyrox_Tue": "Casey",
+    "5_30_AM_Hyrox_Thu": "Casey",
+    "8_45_AM_Kodafit_Mon": "Kaylie",
+    "8_45_AM_Kodafit_Wed": "Kaylie",
+    "8_45_AM_Kodafit_Fri": "Kaylie",
+    "9_00_AM_Hyrox_Mon": "Kevin",
+    "9_00_AM_Hyrox_Thu": "Kevin",
+    "5_00_AM_CrossFit_Mon": "Dani",
+    "6_00_AM_CrossFit_Mon": "Dani",
+    "5_00_AM_CrossFit_Tue": "Scott",
+    "6_00_AM_CrossFit_Tue": "Scott",
+    "5_00_AM_CrossFit_Wed": "Isabelle",
+    "6_00_AM_CrossFit_Wed": "Isabelle",
+    "5_00_AM_CrossFit_Thu": "Dani",
+    "6_00_AM_CrossFit_Thu": "Dani",
+    "5_00_AM_CrossFit_Fri": "Kevin",
+    "6_00_AM_CrossFit_Fri": "Kevin",
+    "5_30_AM_CrossFit_Mon": "Isabelle",
+    "6_30_AM_CrossFit_Mon": "Isabelle",
+    "7_45_AM_CrossFit_Mon": "Isabelle",
+    "5_30_AM_CrossFit_Wed": "Kevin",
+    "6_30_AM_CrossFit_Wed": "Kevin",
+    "7_45_AM_CrossFit_Wed": "Kevin",
+    "5_30_AM_CrossFit_Thu": "Jessica",
+    "6_30_AM_CrossFit_Thu": "Jessica",
+    "7_45_AM_CrossFit_Thu": "Jessica",
+    "5_30_AM_CrossFit_Fri": "Isabelle",
+    "6_30_AM_CrossFit_Fri": "Isabelle",
+    "7_45_AM_CrossFit_Fri": "Isabelle",
+    "5_30_AM_KodaShred_Mon": "Riley",
+    "9_45_AM_CrossFit_Mon": "Jamie",
+    "11_00_AM_CrossFit_Mon": "Jamie",
+    "12_15_PM_CrossFit_Mon": "Jamie",
+    "4_00_PM_CrossFit_Mon": "Riley",
+    "5_15_PM_CrossFit_Mon": "Riley",
+    "6_30_PM_CrossFit_Mon": "Riley",
+    "4_30_PM_CrossFit_Mon": "Isabelle",
+    "5_45_PM_CrossFit_Mon": "Isabelle",
+    "5_15_PM_KodaShred_Mon": "Tracey",
+    "9_45_AM_CrossFit_Tue": "Riley",
+    "11_00_AM_CrossFit_Tue": "Riley",
+    "12_15_PM_CrossFit_Tue": "Riley",
+    "4_00_PM_CrossFit_Tue": "Riley",
+    "5_15_PM_CrossFit_Tue": "Riley",
+    "6_30_PM_CrossFit_Tue": "Riley",
+    "3_30_PM_CrossFit_Tue": "Jamie",
+    "4_30_PM_CrossFit_Tue": "Jamie",
+    "5_45_PM_CrossFit_Tue": "Jamie",
+    "5_30_AM_KodaShred_Wed": "William",
+    "9_45_AM_CrossFit_Wed": "Jamie",
+    "11_00_AM_CrossFit_Wed": "Jamie",
+    "12_15_PM_CrossFit_Wed": "Jamie",
+    "4_00_PM_CrossFit_Wed": "Jamie",
+    "5_15_PM_CrossFit_Wed": "Jamie",
+    "6_30_PM_CrossFit_Wed": "Jamie",
+    "3_30_PM_CrossFit_Wed": "Kevin",
+    "4_30_PM_CrossFit_Wed": "Kevin",
+    "5_45_PM_CrossFit_Wed": "Kevin",
+    "5_15_PM_KodaShred_Wed": "Isabelle",
+    "4_00_PM_CrossFit_Thu": "Riley",
+    "5_15_PM_CrossFit_Thu": "Riley",
+    "6_30_PM_CrossFit_Thu": "Riley",
+    "3_30_PM_CrossFit_Thu": "Jessica",
+    "4_30_PM_CrossFit_Thu": "Jessica",
+    "5_45_PM_CrossFit_Thu": "Jessica",
+    "5_30_AM_KodaShred_Fri": "Jamie",
+    "9_45_AM_CrossFit_Fri": "Jamie",
+    "11_00_AM_CrossFit_Fri": "Jamie",
+    "12_15_PM_CrossFit_Fri": "Jamie",
+    "4_00_PM_CrossFit_Fri": "Riley",
+    "5_00_PM_CrossFit_Fri": "Riley",
+    "6_00_PM_CrossFit_Fri": "Riley",
+    "9_00_AM_Hyrox_Sat": "Dani",
+    "8_00_AM_Hyrox_Sat": "Dani",
+    "6_00_AM_Hyrox_Sat": "Dani",
+    "7_00_AM_CrossFit_Sat": "Dani",
+    "8_00_AM_CrossFit_Sat": "Jamie",
+    "9_00_AM_CrossFit_Sat": "Jamie",
+    "10_00_AM_CrossFit_Sat": "Jamie",
+    "3_30_PM_CrossFit_Mon": "Tracey",
+    "9_45_AM_CrossFit_Thu": "Tracey",
+    "12_15_PM_CrossFit_Thu": "Tracey",
+    "11_00_AM_CrossFit_Thu": "Tracey"
+  },
+  "coachAssignments": {
+    "Nate": [],
+    "Greg": [
+      "5_30_AM_CrossFit_Tue",
+      "6_30_AM_CrossFit_Tue",
+      "7_45_AM_CrossFit_Tue"
+    ],
+    "Jessica": [
+      "5_30_AM_CrossFit_Thu",
+      "6_30_AM_CrossFit_Thu",
+      "7_45_AM_CrossFit_Thu",
+      "3_30_PM_CrossFit_Thu",
+      "4_30_PM_CrossFit_Thu",
+      "5_45_PM_CrossFit_Thu"
+    ],
+    "Doc Em": [],
+    "Casey": [
+      "5_30_AM_Hyrox_Tue",
+      "5_30_AM_Hyrox_Thu"
+    ],
+    "Maggie": [],
+    "Riley": [
+      "5_30_AM_KodaShred_Mon",
+      "4_00_PM_CrossFit_Mon",
+      "5_15_PM_CrossFit_Mon",
+      "6_30_PM_CrossFit_Mon",
+      "9_45_AM_CrossFit_Tue",
+      "11_00_AM_CrossFit_Tue",
+      "12_15_PM_CrossFit_Tue",
+      "4_00_PM_CrossFit_Tue",
+      "5_15_PM_CrossFit_Tue",
+      "6_30_PM_CrossFit_Tue",
+      "4_00_PM_CrossFit_Thu",
+      "5_15_PM_CrossFit_Thu",
+      "6_30_PM_CrossFit_Thu",
+      "4_00_PM_CrossFit_Fri",
+      "5_00_PM_CrossFit_Fri",
+      "6_00_PM_CrossFit_Fri"
+    ],
+    "Jamie": [
+      "9_45_AM_CrossFit_Mon",
+      "11_00_AM_CrossFit_Mon",
+      "12_15_PM_CrossFit_Mon",
+      "3_30_PM_CrossFit_Tue",
+      "4_30_PM_CrossFit_Tue",
+      "5_45_PM_CrossFit_Tue",
+      "9_45_AM_CrossFit_Wed",
+      "11_00_AM_CrossFit_Wed",
+      "12_15_PM_CrossFit_Wed",
+      "4_00_PM_CrossFit_Wed",
+      "5_15_PM_CrossFit_Wed",
+      "6_30_PM_CrossFit_Wed",
+      "5_30_AM_KodaShred_Fri",
+      "9_45_AM_CrossFit_Fri",
+      "11_00_AM_CrossFit_Fri",
+      "12_15_PM_CrossFit_Fri",
+      "8_00_AM_CrossFit_Sat",
+      "9_00_AM_CrossFit_Sat",
+      "10_00_AM_CrossFit_Sat"
+    ],
+    "Dani": [
+      "5_00_AM_CrossFit_Mon",
+      "6_00_AM_CrossFit_Mon",
+      "5_00_AM_CrossFit_Thu",
+      "6_00_AM_CrossFit_Thu",
+      "9_00_AM_Hyrox_Sat",
+      "8_00_AM_Hyrox_Sat",
+      "6_00_AM_Hyrox_Sat",
+      "7_00_AM_CrossFit_Sat"
+    ],
+    "Isabelle": [
+      "5_00_AM_CrossFit_Wed",
+      "6_00_AM_CrossFit_Wed",
+      "5_30_AM_CrossFit_Mon",
+      "6_30_AM_CrossFit_Mon",
+      "7_45_AM_CrossFit_Mon",
+      "5_30_AM_CrossFit_Fri",
+      "6_30_AM_CrossFit_Fri",
+      "7_45_AM_CrossFit_Fri",
+      "4_30_PM_CrossFit_Mon",
+      "5_45_PM_CrossFit_Mon",
+      "5_15_PM_KodaShred_Wed"
+    ],
+    "William": [
+      "5_30_AM_KodaShred_Wed"
+    ],
+    "Kevin": [
+      "9_00_AM_Hyrox_Mon",
+      "9_00_AM_Hyrox_Thu",
+      "5_00_AM_CrossFit_Fri",
+      "6_00_AM_CrossFit_Fri",
+      "5_30_AM_CrossFit_Wed",
+      "6_30_AM_CrossFit_Wed",
+      "7_45_AM_CrossFit_Wed",
+      "3_30_PM_CrossFit_Wed",
+      "4_30_PM_CrossFit_Wed",
+      "5_45_PM_CrossFit_Wed"
+    ],
+    "Scott": [
+      "5_00_AM_CrossFit_Tue",
+      "6_00_AM_CrossFit_Tue"
+    ],
+    "Tracey": [
+      "5_15_PM_KodaShred_Mon",
+      "3_30_PM_CrossFit_Mon",
+      "9_45_AM_CrossFit_Thu",
+      "12_15_PM_CrossFit_Thu",
+      "11_00_AM_CrossFit_Thu"
+    ],
+    "Elissa": [],
+    "Kaylie": [
+      "8_45_AM_Kodafit_Mon",
+      "8_45_AM_Kodafit_Wed",
+      "8_45_AM_Kodafit_Fri"
+    ],
+    "Tyler": [],
+    "Roxanne": []
+  },
+  "coaches": {
+    "Nate": {
+      "rank": 1,
+      "min": 0,
+      "max": 6,
+      "isMain": false
+    },
+    "Greg": {
+      "rank": 2,
+      "min": 12,
+      "max": 15,
+      "isMain": true
+    },
+    "Jessica": {
+      "rank": 3,
+      "min": 3,
+      "max": 7,
+      "isMain": false
+    },
+    "Doc Em": {
+      "rank": 4,
+      "min": 0,
+      "max": 8,
+      "isMain": false
+    },
+    "Casey": {
+      "rank": 5,
+      "min": 0,
+      "max": 6,
+      "isMain": false
+    },
+    "Maggie": {
+      "rank": 6,
+      "min": 0,
+      "max": 6,
+      "isMain": false
+    },
+    "Riley": {
+      "rank": 7,
+      "min": 14,
+      "max": 18,
+      "isMain": true
+    },
+    "Jamie": {
+      "rank": 8,
+      "min": 14,
+      "max": 18,
+      "isMain": true
+    },
+    "Dani": {
+      "rank": 9,
+      "min": 8,
+      "max": 12,
+      "isMain": true
+    },
+    "Isabelle": {
+      "rank": 10,
+      "min": 8,
+      "max": 12,
+      "isMain": true
+    },
+    "William": {
+      "rank": 11,
+      "min": 2,
+      "max": 6,
+      "isMain": false
+    },
+    "Kevin": {
+      "rank": 12,
+      "min": 6,
+      "max": 13,
+      "isMain": true
+    },
+    "Scott": {
+      "rank": 13,
+      "min": 0,
+      "max": 4,
+      "isMain": false
+    },
+    "Tracey": {
+      "rank": 14,
+      "min": 4,
+      "max": 8,
+      "isMain": false
+    },
+    "Elissa": {
+      "rank": 15,
+      "min": 0,
+      "max": 9,
+      "isMain": false
+    },
+    "Kaylie": {
+      "rank": 16,
+      "min": 0,
+      "max": 6,
+      "isMain": false
+    },
+    "Tyler": {
+      "rank": 17,
+      "min": 0,
+      "max": 4,
+      "isMain": false
+    },
+    "Roxanne": {
+      "rank": 18,
+      "min": 0,
+      "max": 6,
+      "isMain": false
+    }
+  }
+}

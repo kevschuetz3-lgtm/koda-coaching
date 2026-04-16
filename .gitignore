@@ -1,0 +1,5 @@
+node_modules/
+*.pdf
+*.xlsx
+schedule_cron.log
+schedule_analysis.md
