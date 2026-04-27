@@ -24,7 +24,7 @@ const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Koda CrossFit — Schedule 4/20/2026</title>
+  <title>Koda CrossFit — Schedule 4/27/2026</title>
   <style>
     @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -54,7 +54,7 @@ const html = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-<h1>Koda CrossFit &mdash; Week of April 20, 2026</h1>
+<h1>Koda CrossFit &mdash; Week of April 27, 2026</h1>
 <table>
   <colgroup>
     <col class="coach-col"><col class="time-col"><col class="day-col"><col class="day-col">
@@ -103,6 +103,7 @@ const rows = [
   ["4:30 PM",            "4_30_PM_CrossFit",  [1,1,1,1,0], "fri5", null, null],
   ["5:15 PM\\nCrossFit", "5_15_PM_CrossFit",  [1,1,1,1,0], null, null, null],
   ["5:15 PM\\nKodaShred","5_15_PM_KodaShred", [1,0,1,0,0], null, null, null],
+  ["5:15 PM\\nHyrox",    "5_15_PM_Hyrox",     [0,1,1,0,0], null, null, null],
   ["5:45 PM",            "5_45_PM_CrossFit",  [1,1,1,1,0], "fri6", null, null],
   ["6:30 PM",            "6_30_PM_CrossFit",  [1,1,1,1,0], null, null, null],
 ];
@@ -138,10 +139,10 @@ rows.forEach((row, idx) => {
 </table>
 </div>
 <p style="margin-top:10px;font-size:9px;color:#555;">
-  Greg &amp; Tracey: no availability this week. Kevin: no submission received. Riley: Thu evening off (per request). Scott: 2 classes (per request). Isabelle: 17 classes (over 12 max) — necessary due to limited coach availability this week.
+  Riley: out Thu–Sat. Kevin: airport Fri 8am, commitment Thu afternoon. Isabelle: concert Fri night. Tyler &amp; Nate: no availability. Doc Em, Maggie, Roxanne: did not submit. Elissa: submitted but unable to place without dropping others below min.
 </p>
 </body>
 </html>`;
 
-fs.writeFileSync('./schedule_4-20.html', html);
-console.log('Done: schedule_4-20.html');
+fs.writeFileSync('./schedule_4-27.html', html);
+console.log('Done: schedule_4-27.html');

@@ -238,16 +238,22 @@ function getDayBlocks(day) {
   if (day !== "Fri" && day !== "Sat") {
     const eveningA = daySlots.filter(s => {
       const tk = getTimeKey(s);
-      return EVENING_A_SLOTS.includes(tk) && !getFullTimeKey(s).includes("KodaShred");
+      const ft = getFullTimeKey(s);
+      return EVENING_A_SLOTS.includes(tk) && !ft.includes("KodaShred") && !ft.includes("Hyrox");
     });
     const eveningB = daySlots.filter(s => {
       const tk = getTimeKey(s);
-      return EVENING_B_SLOTS.includes(tk) && !getFullTimeKey(s).includes("KodaShred");
+      const ft = getFullTimeKey(s);
+      return EVENING_B_SLOTS.includes(tk) && !ft.includes("KodaShred") && !ft.includes("Hyrox");
     });
     const eveningKS = daySlots.filter(s => getFullTimeKey(s).includes("5_15_PM_KodaShred"));
+    const eveningHX = daySlots.filter(s => getFullTimeKey(s).includes("5_15_PM_Hyrox"));
 
     if (eveningA.length > 0 || eveningB.length > 0) {
-      blocks.push({ type: "eveningAB", slotsA: eveningA, slotsB: eveningB, slotsKS: eveningKS, label: "Evening A/B" });
+      blocks.push({ type: "eveningAB", slotsA: eveningA, slotsB: eveningB, slotsKS: eveningKS, slotsHX: eveningHX, label: "Evening A/B" });
+    } else if (eveningKS.length > 0 || eveningHX.length > 0) {
+      eveningKS.forEach(s => blocks.push({ type: "single", slots: [s], label: "5:15 PM Shred" }));
+      eveningHX.forEach(s => blocks.push({ type: "single", slots: [s], label: "5:15 PM Hyrox" }));
     }
   }
 
@@ -573,6 +579,7 @@ for (const day of DAYS) {
       const unassignedA = block.slotsA.filter(s => !schedule[s]);
       const unassignedB = block.slotsB.filter(s => !schedule[s]);
       const unassignedKS = block.slotsKS.filter(s => !schedule[s]);
+      const unassignedHX = (block.slotsHX || []).filter(s => !schedule[s]);
 
       // Find Coach A (for 3:30/4:00/5:15/6:30)
       let coachA = null;
@@ -602,6 +609,13 @@ for (const day of DAYS) {
 
       // KodaShred 5:15 — can be a third coach
       for (const s of unassignedKS) {
+        if (schedule[s]) continue;
+        const b = findBestCoach(s);
+        if (b) assign(b.coach, s);
+      }
+
+      // Hyrox 5:15 — separate coach (same time as 5:15 CrossFit/KodaShred)
+      for (const s of unassignedHX) {
         if (schedule[s]) continue;
         const b = findBestCoach(s);
         if (b) assign(b.coach, s);
@@ -860,8 +874,8 @@ if (satIssues === 0) console.log("  ✓ All Saturday coaches have 2+ classes, no
 // Show evening A/B pattern
 console.log("\nEvening patterns:");
 for (const day of ["Mon", "Tue", "Wed", "Thu"]) {
-  const aSlots = sortedSlots.filter(s => getDay(s) === day && EVENING_A_SLOTS.includes(getTimeKey(s)) && !getFullTimeKey(s).includes("KodaShred"));
-  const bSlots = sortedSlots.filter(s => getDay(s) === day && EVENING_B_SLOTS.includes(getTimeKey(s)) && !getFullTimeKey(s).includes("KodaShred"));
+  const aSlots = sortedSlots.filter(s => getDay(s) === day && EVENING_A_SLOTS.includes(getTimeKey(s)) && !getFullTimeKey(s).includes("KodaShred") && !getFullTimeKey(s).includes("Hyrox"));
+  const bSlots = sortedSlots.filter(s => getDay(s) === day && EVENING_B_SLOTS.includes(getTimeKey(s)) && !getFullTimeKey(s).includes("KodaShred") && !getFullTimeKey(s).includes("Hyrox"));
   const aCoaches = [...new Set(aSlots.map(s => schedule[s]).filter(Boolean))];
   const bCoaches = [...new Set(bSlots.map(s => schedule[s]).filter(Boolean))];
   const isAB = aCoaches.length === 1 && bCoaches.length === 1 && aCoaches[0] !== bCoaches[0];
