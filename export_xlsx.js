@@ -58,7 +58,7 @@ const rows = [
   {time:"5:45 PM",  prefix:"5_45_PM_CrossFit",  mask:[1,1,1,1,0], fri:{slot:"6_00_PM_CrossFit_Fri", label:"6:00 PM"}},
   {time:"6:30 PM",  prefix:"6_30_PM_CrossFit",  mask:[1,1,1,1,0]},
   {time:"5:15 PM\nSpecialty", prefix:"5_15_PM_KodaShred", mask:[1,0,1,0,0], ann:"Shred"},
-  {time:"5:15 PM\nHyrox",     prefix:"5_15_PM_Hyrox",     mask:[0,1,1,0,0], ann:"Hyrox"},
+  {time:"5:15 PM\nHyrox",     prefix:"5_15_PM_Hyrox",     mask:[0,1,0,1,0], ann:"Hyrox"},
 ];
 
 async function exportSchedule() {

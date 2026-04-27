@@ -103,7 +103,7 @@ const rows = [
   ["4:30 PM",            "4_30_PM_CrossFit",  [1,1,1,1,0], "fri5", null, null],
   ["5:15 PM\\nCrossFit", "5_15_PM_CrossFit",  [1,1,1,1,0], null, null, null],
   ["5:15 PM\\nKodaShred","5_15_PM_KodaShred", [1,0,1,0,0], null, null, null],
-  ["5:15 PM\\nHyrox",    "5_15_PM_Hyrox",     [0,1,1,0,0], null, null, null],
+  ["5:15 PM\\nHyrox",    "5_15_PM_Hyrox",     [0,1,0,1,0], null, null, null],
   ["5:45 PM",            "5_45_PM_CrossFit",  [1,1,1,1,0], "fri6", null, null],
   ["6:30 PM",            "6_30_PM_CrossFit",  [1,1,1,1,0], null, null, null],
 ];
