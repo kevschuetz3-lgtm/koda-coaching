@@ -519,35 +519,87 @@
     }
 
     // ── Auto-set next Monday and restrict to Mondays only ──
-    (function() {
-      var today = new Date();
-      var day = today.getDay();
-      var diff = (day === 0) ? 1 : 8 - day;
-      var nextMon = new Date(today);
-      nextMon.setDate(today.getDate() + diff);
-      var weekOfInput = document.getElementById("weekOf");
-      weekOfInput.value = nextMon.toISOString().slice(0, 10);
+    function computeNextMonday(fromDate) {
+      var d = new Date(fromDate);
+      var dow = d.getDay();                  // 0=Sun … 6=Sat
+      var add = (dow === 1) ? 7              // already a Monday → next Monday
+              : (dow === 0) ? 1              // Sunday → tomorrow
+              : 8 - dow;                     // Tue–Sat → next Monday
+      d.setDate(d.getDate() + add);
+      return d;
+    }
+    function toISODateLocal(d) {
+      // Local-time YYYY-MM-DD (no UTC drift)
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, "0");
+      var day = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + day;
+    }
+    function parseLocalDate(s) {
+      if (!s) return null;
+      var parts = s.split("-");
+      if (parts.length !== 3) return null;
+      return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    }
+    function snapToMonday(input, opts) {
+      opts = opts || {};
+      var d = parseLocalDate(input.value);
+      // Empty or invalid → reset to next Monday from today
+      if (!d || isNaN(d.getTime())) {
+        d = computeNextMonday(new Date());
+        input.value = toISODateLocal(d);
+        if (!opts.silent) flashStatus("Date set to " + input.value + " (next Monday).");
+        return;
+      }
+      // Already a Monday → keep
+      if (d.getDay() === 1) return;
+      // Otherwise snap forward to the next Monday after the picked date
+      var snapped = computeNextMonday(d);
+      // computeNextMonday returns next *after* current Monday; for Tue-Sun we
+      // want the upcoming Monday from the picked date — which it already does.
+      input.value = toISODateLocal(snapped);
+      if (!opts.silent) flashStatus("Date adjusted to Monday " + input.value + ".");
+    }
+    function flashStatus(msg) {
+      var el = document.getElementById("copyStatus");
+      if (!el) return;
+      el.textContent = msg;
+      setTimeout(function() {
+        if (el.textContent === msg) el.textContent = "";
+      }, 3000);
+    }
 
-      // Only allow selecting Mondays
-      weekOfInput.addEventListener("input", function() {
-        var selected = new Date(this.value + "T12:00:00");
-        if (selected.getDay() !== 1) {
-          // Snap to the next Monday
-          var d = selected.getDay();
-          var toMon = (d === 0) ? 1 : 8 - d;
-          selected.setDate(selected.getDate() + toMon);
-          this.value = selected.toISOString().slice(0, 10);
-          document.getElementById("copyStatus").textContent = "Date adjusted to Monday.";
-          setTimeout(function() { document.getElementById("copyStatus").textContent = ""; }, 2000);
-        }
+    (function() {
+      var weekOfInput = document.getElementById("weekOf");
+      var nextMon = computeNextMonday(new Date());
+      var nextMonISO = toISODateLocal(nextMon);
+      weekOfInput.value = nextMonISO;
+      // Prevent picking earlier than next Monday
+      weekOfInput.setAttribute("min", nextMonISO);
+
+      // Belt-and-suspenders: input/change/blur all snap to Monday
+      ["input", "change", "blur"].forEach(function(evt) {
+        weekOfInput.addEventListener(evt, function() { snapToMonday(this); });
       });
     })();
+
+    // Hard guard: ensure weekOf is a Monday before any submit
+    function assertMondayWeekOf() {
+      var input = document.getElementById("weekOf");
+      snapToMonday(input, { silent: false });
+      var d = parseLocalDate(input.value);
+      return d && d.getDay() === 1;
+    }
 
     // ── No Availability ──
     function submitNoAvailability() {
       var name = document.getElementById("coachName").value;
       if (!name) {
         document.getElementById("copyStatus").textContent = "Please select your name first.";
+        return;
+      }
+      if (!assertMondayWeekOf()) {
+        alert("Please pick a Monday as the week-of date.");
         return;
       }
 
@@ -626,6 +678,11 @@
     // ── Form Submission ──
     document.getElementById("availForm").addEventListener("submit", function(e) {
       e.preventDefault();
+
+      if (!assertMondayWeekOf()) {
+        alert("Please pick a Monday as the week-of date.");
+        return;
+      }
 
       var data = {
         coachName: document.getElementById("coachName").value,
