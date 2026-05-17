@@ -112,6 +112,16 @@
       color: #aaa;
     }
 
+    .holiday-banner {
+      background: #fb923c;
+      color: #1a1a2e;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-align: center;
+      margin: 16px 0 4px;
+    }
+
     /* ── Grid Table ── */
     .section-title {
       font-size: 1.1rem;
@@ -373,6 +383,9 @@
         <span class="copy-status" id="copyStatus"></span>
       </div>
 
+      <!-- Holiday banner (shown only when weekOf has a holiday override) -->
+      <div id="holidayBanner" class="holiday-banner" style="display:none;"></div>
+
       <!-- ═══ WEEKDAY GRID ═══ -->
       <div class="section-title">Monday – Friday</div>
       <div class="select-all-row">
@@ -464,27 +477,85 @@
 
     var dayNames = ["Mon","Tue","Wed","Thu","Fri"];
 
-    // ── Build Weekday Grid ──
-    var wkBody = document.querySelector("#weekday-grid tbody");
-    weekdaySlots.forEach(function(slot) {
-      var tr = document.createElement("tr");
-      tr.className = "type-" + slot[1];
-      var labelTd = document.createElement("td");
-      labelTd.textContent = slot[0];
-      tr.appendChild(labelTd);
-
-      for (var d = 0; d < 5; d++) {
-        var td = document.createElement("td");
-        if (slot[2][d]) {
-          td.className = "check-cell";
-          var id = slug(slot[0]) + "_" + dayNames[d];
-          td.innerHTML = '<input type="checkbox" name="' + id + '"><span class="box"></span>';
-          td.onclick = function() { var cb = this.querySelector("input"); cb.checked = !cb.checked; };
+    // ── Holiday / one-off schedule overrides (keyed by weekOf ISO date) ──
+    // Each override replaces the listed day(s) with a limited slot list.
+    var holidaySchedules = {
+      "2026-05-25": {
+        label: "Memorial Day — Limited Monday Schedule",
+        // Day index: 0=Mon, 1=Tue, ... 4=Fri. Each entry is [label, type].
+        days: {
+          0: [
+            ["7:00 AM — CrossFit",  "crossfit"],
+            ["8:30 AM — CrossFit",  "crossfit"],
+            ["10:00 AM — CrossFit", "crossfit"]
+          ]
         }
-        tr.appendChild(td);
       }
-      wkBody.appendChild(tr);
-    });
+    };
+
+    function slotMinutes(label) {
+      var m = label.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!m) return 9999;
+      var h = parseInt(m[1], 10);
+      var mm = parseInt(m[2], 10);
+      var p = m[3].toUpperCase();
+      if (p === "PM" && h !== 12) h += 12;
+      if (p === "AM" && h === 12) h = 0;
+      return h * 60 + mm;
+    }
+
+    // ── Build Weekday Grid (re-runnable when weekOf changes) ──
+    function buildWeekdayGrid() {
+      var wkBody = document.querySelector("#weekday-grid tbody");
+      var banner = document.getElementById("holidayBanner");
+      var weekOf = document.getElementById("weekOf").value;
+      var holiday = holidaySchedules[weekOf];
+
+      // Deep-copy the base slots so we can mutate per-render
+      var slots = weekdaySlots.map(function(s) { return [s[0], s[1], s[2].slice()]; });
+
+      if (holiday) {
+        banner.textContent = holiday.label;
+        banner.style.display = "block";
+        // For each day with an override, disable that day on all base slots
+        // and append the override slots (which are only available on that day).
+        Object.keys(holiday.days).forEach(function(dStr) {
+          var d = +dStr;
+          slots.forEach(function(s) { s[2][d] = 0; });
+          holiday.days[d].forEach(function(h) {
+            var pattern = [0,0,0,0,0];
+            pattern[d] = 1;
+            slots.push([h[0], h[1], pattern]);
+          });
+        });
+        // Sort by time so the limited slots interleave naturally
+        slots.sort(function(a, b) { return slotMinutes(a[0]) - slotMinutes(b[0]); });
+      } else {
+        banner.style.display = "none";
+        banner.textContent = "";
+      }
+
+      wkBody.innerHTML = "";
+      slots.forEach(function(slot) {
+        var tr = document.createElement("tr");
+        tr.className = "type-" + slot[1];
+        var labelTd = document.createElement("td");
+        labelTd.textContent = slot[0];
+        tr.appendChild(labelTd);
+
+        for (var d = 0; d < 5; d++) {
+          var td = document.createElement("td");
+          if (slot[2][d]) {
+            td.className = "check-cell";
+            var id = slug(slot[0]) + "_" + dayNames[d];
+            td.innerHTML = '<input type="checkbox" name="' + id + '"><span class="box"></span>';
+            td.onclick = function() { var cb = this.querySelector("input"); cb.checked = !cb.checked; };
+          }
+          tr.appendChild(td);
+        }
+        wkBody.appendChild(tr);
+      });
+    }
 
     // ── Build Saturday Grid ──
     var satBody = document.querySelector("#sat-grid tbody");
@@ -577,9 +648,15 @@
       // Prevent picking earlier than next Monday
       weekOfInput.setAttribute("min", nextMonISO);
 
-      // Belt-and-suspenders: input/change/blur all snap to Monday
+      // Build the weekday grid once weekOf is set so any holiday override applies
+      buildWeekdayGrid();
+
+      // Belt-and-suspenders: input/change/blur all snap to Monday and rebuild grid
       ["input", "change", "blur"].forEach(function(evt) {
-        weekOfInput.addEventListener(evt, function() { snapToMonday(this); });
+        weekOfInput.addEventListener(evt, function() {
+          snapToMonday(this);
+          buildWeekdayGrid();
+        });
       });
     })();
 
