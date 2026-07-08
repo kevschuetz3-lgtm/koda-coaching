@@ -2,30 +2,31 @@ const fs = require('fs');
 
 // ── Coach Rankings & Constraints ──
 const COACHES = {
-  "Nate":     { rank: 1,  min: 0,  max: 6,  isMain: false },
-  "Greg":     { rank: 2,  min: 12, max: 15, isMain: true },
-  "Jessica":  { rank: 3,  min: 3,  max: 7,  isMain: false },
-  "Doc Em":   { rank: 4,  min: 0,  max: 8,  isMain: false },
-  "Casey":    { rank: 5,  min: 0,  max: 6,  isMain: false },
-  "Maggie":   { rank: 6,  min: 0,  max: 6,  isMain: false },
-  "Riley":    { rank: 7,  min: 14, max: 18, isMain: true },
-  "Jamie":    { rank: 8,  min: 14, max: 18, isMain: true },
-  "Dani":     { rank: 9,  min: 8,  max: 12, isMain: true },
-  "Isabelle": { rank: 10, min: 8,  max: 12, isMain: true },
+  "Justin":   { rank: 1,  min: 0,  max: 4,  isMain: false },
+  "Nate":     { rank: 2,  min: 0,  max: 6,  isMain: false },
+  "Greg":     { rank: 3,  min: 12, max: 15, isMain: true },
+  "Jessica":  { rank: 4,  min: 3,  max: 7,  isMain: false },
+  "Doc Em":   { rank: 5,  min: 0,  max: 8,  isMain: false },
+  "Casey":    { rank: 6,  min: 0,  max: 6,  isMain: false },
+  "Maggie":   { rank: 7,  min: 0,  max: 6,  isMain: false },
+  "Riley":    { rank: 8,  min: 14, max: 18, isMain: true },
+  "Jamie":    { rank: 9,  min: 14, max: 18, isMain: true },
+  "Tracey":   { rank: 10, min: 4,  max: 8,  isMain: false },
   "William":  { rank: 11, min: 2,  max: 6,  isMain: false },
-  "Kevin":    { rank: 12, min: 6,  max: 13, isMain: true },
-  "Scott":    { rank: 13, min: 0,  max: 4,  isMain: false },
-  "Tracey":   { rank: 14, min: 4,  max: 8,  isMain: false },
+  "Scott":    { rank: 12, min: 0,  max: 4,  isMain: false },
+  "Isabelle": { rank: 13, min: 8,  max: 12, isMain: true },
+  "Kevin":    { rank: 14, min: 6,  max: 13, isMain: true },
   "Elissa":   { rank: 15, min: 0,  max: 9,  isMain: false },
-  "Kaylie":   { rank: 16, min: 0,  max: 6,  isMain: false },
-  "Tyler":    { rank: 17, min: 0,  max: 4,  isMain: false },
-  "Roxanne":  { rank: 18, min: 0,  max: 6,  isMain: false },
+  "Dani":     { rank: 16, min: 8,  max: 12, isMain: true },
+  "Kaylie":   { rank: 17, min: 0,  max: 6,  isMain: false },
+  "Tyler":    { rank: 18, min: 0,  max: 4,  isMain: false },
+  "Roxanne":  { rank: 19, min: 0,  max: 6,  isMain: false },
 };
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SLOT_ORDER = [
   "5_00_AM", "5_30_AM", "6_00_AM", "6_30_AM", "7_45_AM",
-  "8_45_AM", "9_00_AM", "9_45_AM", "11_00_AM", "12_15_PM",
+  "8_45_AM", "9_00_AM", "9_45_AM", "11_00_AM", "12_00_PM", "12_15_PM",
   "3_30_PM", "4_00_PM", "4_30_PM", "5_00_PM", "5_15_PM", "5_45_PM", "6_00_PM", "6_30_PM"
 ];
 
@@ -39,6 +40,8 @@ const CONFLICTS = {
   "8_45_AM": ["7_45_AM", "9_00_AM", "9_45_AM"],
   "9_00_AM": ["8_45_AM", "9_45_AM"],
   "9_45_AM": ["9_00_AM", "8_45_AM"],
+  "12_00_PM": ["12_15_PM"],
+  "12_15_PM": ["12_00_PM"],
   "3_30_PM": ["4_00_PM"],
   "4_00_PM": ["3_30_PM", "4_30_PM"],
   "4_30_PM": ["4_00_PM", "5_15_PM"],
@@ -137,15 +140,20 @@ function getConsecutivePenalty(coach, slots) {
 }
 
 // ── Load availability ──
+// Clear require cache to ensure fresh data
+delete require.cache[require.resolve('./availability_data.json')];
 const data = require('./availability_data.json');
 const availability = {};
+// Submissions are appended in chronological order by the Apps Script backend.
+// When a coach submits multiple times, the LATEST submission replaces earlier ones
+// (matches the per-coach availability tabs, which also use latest-wins).
 data.submissions.forEach(sub => {
   availability[sub.coach] = new Set(sub.slots);
 });
 
-// All slots that need filling
+// All slots that need filling — derived from latest-per-coach availability, not raw submissions
 const allSlots = new Set();
-data.submissions.forEach(sub => sub.slots.forEach(s => allSlots.add(s)));
+Object.values(availability).forEach(set => set.forEach(s => allSlots.add(s)));
 const sortedSlots = [...allSlots].sort((a, b) => {
   const dayA = DAYS.indexOf(getDay(a));
   const dayB = DAYS.indexOf(getDay(b));
@@ -203,7 +211,7 @@ function getDayBlocks(day) {
 
   // Early block 2: 5:30+6:30(+7:45) AM - need to handle multiple class types at 5:30
   const early2_530 = daySlots.filter(s => getTimeKey(s) === "5_30_AM");
-  const early2_630 = daySlots.filter(s => getTimeKey(s) === "6_30_AM");
+  const early2_630 = daySlots.filter(s => getTimeKey(s) === "6_30_AM" && getFullTimeKey(s).includes("CrossFit"));
   const early2_745 = daySlots.filter(s => getTimeKey(s) === "7_45_AM");
 
   // Group 5:30 slots by class type
@@ -227,6 +235,12 @@ function getDayBlocks(day) {
   // Hyrox 9:00
   const hyrox9 = daySlots.filter(s => getFullTimeKey(s).includes("9_00_AM_Hyrox"));
   hyrox9.forEach(s => blocks.push({ type: "single", slots: [s], label: "9:00 Hyrox" }));
+
+  // Hyrox 6:30 AM and 12:00 PM (Tue/Thu) — standalone specialty classes
+  const hyrox630 = daySlots.filter(s => getFullTimeKey(s).includes("6_30_AM_Hyrox"));
+  hyrox630.forEach(s => blocks.push({ type: "single", slots: [s], label: "6:30 Hyrox" }));
+  const hyroxNoon = daySlots.filter(s => getFullTimeKey(s).includes("12_00_PM_Hyrox"));
+  hyroxNoon.forEach(s => blocks.push({ type: "single", slots: [s], label: "12:00 Hyrox" }));
 
   // Late morning block: 9:45+11:00+12:15
   const lateMorn = daySlots.filter(s => ["9_45_AM", "11_00_AM", "12_15_PM"].includes(getTimeKey(s)));

@@ -27,18 +27,18 @@ const COACH_COLORS = {
   "Jamie":    { bg: "60B0C2", fg: "000000" },
   "Jessica":  { bg: "EEA477", fg: "000000" },
   "Nate":     { bg: "D10CD0", fg: "FFFFFF" },
+  "Justin":   { bg: "1C4587", fg: "FFFFFF" },
   "Dani":     { bg: "6B6B6B", fg: "FFFFFF" },
+  "UNCOVERED":{ bg: "FF0000", fg: "FFFFFF" },
 };
 
 const rows = [
-  {time:"5:30 AM\nSpecialty", multi:[
-    {prefix:"5_30_AM_KodaShred", mask:[1,0,1,0,1], ann:"Shred"},
-    {prefix:"5_30_AM_Hyrox",     mask:[0,1,0,1,0], ann:"Hyrox"}
-  ], sat:{label:"6:00 AM\nHyrox", slot:"6_00_AM_Hyrox"}},
+  {time:"5:30 AM\nHyrox", prefix:"5_30_AM_Hyrox", mask:[0,1,0,1,0], ann:"Hyrox", sat:{label:"6:00 AM\nHyrox", slot:"6_00_AM_Hyrox"}},
   {time:"5:00 AM",  prefix:"5_00_AM_CrossFit",  mask:[1,1,1,1,1], sat:{label:"7:00 AM", slot:"7_00_AM_CrossFit"}},
   {time:"5:30 AM",  prefix:"5_30_AM_CrossFit",  mask:[1,1,1,1,1], sat:{label:"8:00 AM", slot:"8_00_AM_CrossFit"}},
   {time:"6:00 AM",  prefix:"6_00_AM_CrossFit",  mask:[1,1,1,1,1], sat:{label:"9:00 AM", slot:"9_00_AM_CrossFit"}},
   {time:"6:30 AM",  prefix:"6_30_AM_CrossFit",  mask:[1,1,1,1,1], sat:{label:"10:00 AM", slot:"10_00_AM_CrossFit"}},
+  {time:"6:30 AM\nHyrox", prefix:"6_30_AM_Hyrox", mask:[0,1,0,1,0], ann:"Hyrox"},
   {time:"7:45 AM",  prefix:"7_45_AM_CrossFit",  mask:[1,1,1,1,1], sat:{label:"8:00 AM\nHyrox", slot:"8_00_AM_Hyrox"}},
   {time:"8:45 AM\nKodafit", prefix:"8_45_AM_Kodafit", mask:[1,0,1,0,1], ann:"KodaFit", sat:{label:"9:00 AM\nHyrox", slot:"9_00_AM_Hyrox"}},
   {time:"9:00 AM\nHyrox",  prefix:"9_00_AM_Hyrox",   mask:[1,0,0,1,0], ann:"Hyrox", sat:{label:"12:00 PM\nKratos", slot:"12_00_PM_Kratos"}},
@@ -46,6 +46,7 @@ const rows = [
   {time:"8:45 AM\nWomen's", empty:true},
   {time:"9:45 AM",   prefix:"9_45_AM_CrossFit",   mask:[1,1,1,1,1]},
   {time:"11:00 AM",  prefix:"11_00_AM_CrossFit",  mask:[1,1,1,1,1]},
+  {time:"12:00 PM\nHyrox", prefix:"12_00_PM_Hyrox", mask:[0,1,0,1,0], ann:"Hyrox"},
   {time:"12:15 PM",  prefix:"12_15_PM_CrossFit",  mask:[1,1,1,1,1]},
   {time:"Comp Class\n1:30-3 PM", empty:true},
   {time:"Kids/Teens", empty:true},
@@ -57,13 +58,12 @@ const rows = [
   {time:"5:15 PM",  prefix:"5_15_PM_CrossFit",  mask:[1,1,1,1,0]},
   {time:"5:45 PM",  prefix:"5_45_PM_CrossFit",  mask:[1,1,1,1,0], fri:{slot:"6_00_PM_CrossFit_Fri", label:"6:00 PM"}},
   {time:"6:30 PM",  prefix:"6_30_PM_CrossFit",  mask:[1,1,1,1,0]},
-  {time:"5:15 PM\nSpecialty", prefix:"5_15_PM_KodaShred", mask:[1,0,1,0,0], ann:"Shred"},
   {time:"5:15 PM\nHyrox",     prefix:"5_15_PM_Hyrox",     mask:[0,1,0,1,0], ann:"Hyrox"},
 ];
 
 async function exportSchedule() {
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Schedule 4-20');
+  const ws = wb.addWorksheet('Schedule 7-13');
 
   // Column widths
   ws.columns = [
@@ -78,7 +78,7 @@ async function exportSchedule() {
   ];
 
   // Header row
-  const headerData = ["4/20/2026", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat", "Sunday Open\nGym"];
+  const headerData = ["7/13/2026", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat", "Sunday Open\nGym"];
   const headerRow = ws.addRow(headerData);
   headerRow.eachCell(cell => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
@@ -185,8 +185,8 @@ async function exportSchedule() {
     row.height = Math.max(20, maxLines * 15);
   });
 
-  await wb.xlsx.writeFile('./Koda_Schedule_4-27-2026.xlsx');
-  console.log("Exported to Koda_Schedule_4-27-2026.xlsx");
+  await wb.xlsx.writeFile('./Koda_Schedule_7-13-2026.xlsx');
+  console.log("Exported to Koda_Schedule_7-13-2026.xlsx");
 }
 
 exportSchedule().catch(err => console.error(err));

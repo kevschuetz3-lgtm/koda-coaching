@@ -31,7 +31,7 @@ const SCHED_COLORS = {
   Riley: '#9900ff', Casey: '#0c343d', Elissa: '#ff9900', Maggie: '#7c0303',
   Roxanne: '#f6b26b', Tyler: '#ffff00', Scott: '#207416', 'Doc Em': '#ad0d5d',
   Greg: '#4c1130', Isabelle: '#00ff00', Jamie: '#60b0c2', Jessica: '#eea477',
-  Nate: '#d10cd0', Dani: '#6b6b6b',
+  Nate: '#d10cd0', Dani: '#6b6b6b', Justin: '#1c4587',
   Natalie: '#ff0000', Kylie: '#bf9000', Emily: '#000000'
 };
 const TEXT_COLORS = {
@@ -61,22 +61,23 @@ const dayLabels = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat'];
 
 const rows = [
   { label: '5:00 AM',           base: '5_00_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
-  { label: '5:30 AM KodaShred', base: '5_30_AM_KodaShred', mask: [1,0,1,0,1], sat: null },
   { label: '5:30 AM Hyrox',     base: '5_30_AM_Hyrox',     mask: [0,1,0,1,0], sat: null },
   { label: '5:30 AM',           base: '5_30_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
   { label: '6:00 AM',           base: '6_00_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
   { label: '6:30 AM',           base: '6_30_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
+  { label: '6:30 AM Hyrox',     base: '6_30_AM_Hyrox',     mask: [0,1,0,1,0], sat: null },
   { label: '7:45 AM',           base: '7_45_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
   { label: '8:45 AM Kodafit',   base: '8_45_AM_Kodafit',   mask: [1,0,1,0,1], sat: null },
   { label: '9:00 AM Hyrox',     base: '9_00_AM_Hyrox',     mask: [1,0,0,1,0], sat: null },
   { label: '9:45 AM',           base: '9_45_AM_CrossFit',  mask: [1,1,1,1,1], sat: null },
   { label: '11:00 AM',          base: '11_00_AM_CrossFit', mask: [1,1,1,1,1], sat: null },
+  { label: '12:00 PM Hyrox',    base: '12_00_PM_Hyrox',    mask: [0,1,0,1,0], sat: null },
   { label: '12:15 PM',          base: '12_15_PM_CrossFit', mask: [1,1,1,1,1], sat: null },
   { label: '3:30 PM',           base: '3_30_PM_CrossFit',  mask: [1,1,1,1,0], sat: null },
   { label: '4:00 PM',           base: '4_00_PM_CrossFit',  mask: [1,1,1,1,1], sat: null },
   { label: '4:30 PM / 5:00 PM', base: '4_30_PM_CrossFit',  mask: [1,1,1,1,0], sat: null, fri: '5_00_PM_CrossFit' },
   { label: '5:15 PM CrossFit',  base: '5_15_PM_CrossFit',  mask: [1,1,1,1,0], sat: null },
-  { label: '5:15 PM KodaShred', base: '5_15_PM_KodaShred', mask: [1,0,1,0,0], sat: null },
+  { label: '5:15 PM Hyrox',    base: '5_15_PM_Hyrox',     mask: [0,1,0,1,0], sat: null },
   { label: '5:45 PM / 6:00 PM', base: '5_45_PM_CrossFit',  mask: [1,1,1,1,0], sat: null, fri: '6_00_PM_CrossFit' },
   { label: '6:30 PM',           base: '6_30_PM_CrossFit',  mask: [1,1,1,1,0], sat: null },
 ];
@@ -122,7 +123,7 @@ satRows.forEach(r => {
 satSection += '</tbody></table>';
 
 // Summary table
-const coachOrder = ['Riley','Jamie','Dani','Isabelle','Kevin','Greg','Elissa','Jessica','Casey','Maggie','William','Scott','Tracey','Roxanne','Kaylie','Tyler','Nate'];
+const coachOrder = ['Riley','Jamie','Dani','Isabelle','Kevin','Greg','Elissa','Jessica','Casey','Maggie','William','Scott','Tracey','Roxanne','Kaylie','Tyler','Nate','Justin'];
 let summaryRows = '';
 coachOrder.forEach(c => {
   const info = coaches[c];
@@ -175,18 +176,18 @@ const htmlBody = `
 // ── Load attachments as base64 ──
 const fs = require('fs');
 const attachments = [];
-const pdfPath = './Koda_Schedule_4-20-2026.pdf';
-const xlsxPath = './Koda_Schedule_4-20-2026.xlsx';
+const pdfPath = './Koda_Schedule_6-29.pdf';
+const xlsxPath = './Koda_Schedule_6-29-2026.xlsx';
 if (fs.existsSync(pdfPath)) {
   attachments.push({
-    fileName: 'Koda_Schedule_4-20-2026.pdf',
+    fileName: 'Koda_Schedule_6-29.pdf',
     mimeType: 'application/pdf',
     data: fs.readFileSync(pdfPath).toString('base64')
   });
 }
 if (fs.existsSync(xlsxPath)) {
   attachments.push({
-    fileName: 'Koda_Schedule_4-20-2026.xlsx',
+    fileName: 'Koda_Schedule_6-29-2026.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     data: fs.readFileSync(xlsxPath).toString('base64')
   });
