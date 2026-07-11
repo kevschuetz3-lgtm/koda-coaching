@@ -141,6 +141,17 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Skip the weekly reminder on one specific date (self-clearing) ──
+    if (data.action === "skipNextWeeklyReminder") {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data.on || "")) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "invalid 'on' date (yyyy-MM-dd)" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      PropertiesService.getScriptProperties().setProperty("SKIP_WEEKLY_REMINDER_ON", data.on);
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", skipOn: data.on }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Send a test copy of the early reminder to one address ──
     if (data.action === "testEarlyReminder") {
       MailApp.sendEmail({
@@ -838,6 +849,19 @@ function sendReminderCore_(extraNote) {
 }
 
 function sendReminderEmails() {
+  // One-time skip support: if SKIP_WEEKLY_REMINDER_ON matches today, skip this
+  // run and clear the flag so the normal weekly schedule resumes by itself.
+  var props = PropertiesService.getScriptProperties();
+  var skipOn = props.getProperty("SKIP_WEEKLY_REMINDER_ON"); // yyyy-MM-dd
+  if (skipOn) {
+    var todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+    if (todayStr === skipOn) {
+      props.deleteProperty("SKIP_WEEKLY_REMINDER_ON");
+      Logger.log("Weekly reminder skipped (one-time skip for " + skipOn + ")");
+      return;
+    }
+    if (todayStr > skipOn) props.deleteProperty("SKIP_WEEKLY_REMINDER_ON"); // stale flag
+  }
   sendReminderCore_(null);
 }
 
