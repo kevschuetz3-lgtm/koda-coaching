@@ -594,7 +594,7 @@
       var d = new Date(fromDate);
       var dow = d.getDay();                  // 0=Sun … 6=Sat
       var add = (dow === 1) ? 7              // already a Monday → next Monday
-              : (dow === 0) ? 1              // Sunday → tomorrow
+              : (dow === 0) ? 8              // Sunday → Monday a week out (tomorrow's week is already scheduled)
               : 8 - dow;                     // Tue–Sat → next Monday
       d.setDate(d.getDate() + add);
       return d;

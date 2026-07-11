@@ -126,6 +126,32 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Schedule a one-off early availability reminder ──
+    if (data.action === "scheduleEarlyReminder") {
+      var when = new Date(data.at);
+      if (isNaN(when.getTime())) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "invalid 'at' datetime" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      ScriptApp.getProjectTriggers().forEach(function(t) {
+        if (t.getHandlerFunction() === "sendEarlyReminderOneOff") ScriptApp.deleteTrigger(t);
+      });
+      ScriptApp.newTrigger("sendEarlyReminderOneOff").timeBased().at(when).create();
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", scheduledFor: when.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Send a test copy of the early reminder to one address ──
+    if (data.action === "testEarlyReminder") {
+      MailApp.sendEmail({
+        to: data.to,
+        subject: "[TEST] Koda CrossFit — Submit Your Availability for Next Week",
+        htmlBody: buildReminderHtml_("Kevin", getNextMondayForReminder_(), EARLY_REMINDER_NOTE)
+      });
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", sentTo: data.to }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Delete specified tabs (with safety guard) ──
     if (data.action === "deleteTabs") {
       var id = PropertiesService.getScriptProperties().getProperty("SHEET_ID");
@@ -156,6 +182,74 @@ function doPost(e) {
       ss.setActiveSheet(sh);
       ss.moveActiveSheet(1);
       return ContentService.createTextOutput(JSON.stringify({ status: "ok", moved: data.name }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Receive a sponsor quote from the Iron Games sponsor site ──
+    // Logs to the "Koda Iron Games Sponsor Quotes" sheet (auto-created),
+    // emails the sponsor their itemized quote, and notifies Kevin.
+    if (data.action === "sponsorQuote") {
+      var qProps = PropertiesService.getScriptProperties();
+      var qId = qProps.getProperty("SPONSOR_QUOTES_SHEET_ID");
+      var qss = null;
+      if (qId) { try { qss = SpreadsheetApp.openById(qId); } catch (eQ) { qss = null; } }
+      if (!qss) {
+        qss = SpreadsheetApp.create("Koda Iron Games Sponsor Quotes");
+        qss.getSheets()[0].setName("Quotes")
+          .getRange(1, 1, 1, 14).setValues([[
+            "Timestamp", "Company", "Contact", "Email", "Phone", "Bundles",
+            "A-la-carte items", "Item count", "List subtotal", "Discount %",
+            "Total savings", "Quoted total", "Notes", "Page"
+          ]]).setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
+        qProps.setProperty("SPONSOR_QUOTES_SHEET_ID", qss.getId());
+      }
+      var qsh = qss.getSheetByName("Quotes") || qss.getSheets()[0];
+      qsh.appendRow([
+        new Date(), data.company, data.contact, data.email, data.phone || "",
+        (data.bundles || []).join("\n"), (data.items || []).join("\n"),
+        data.itemCount, data.subtotal, data.discountPct, data.savings, data.total,
+        data.notes || "", data.page || ""
+      ]);
+
+      var qLines = (data.bundles || []).concat(data.items || []);
+      var quoteHtml =
+        '<table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+        qLines.map(function (l) {
+          return '<tr><td style="border-bottom:1px solid #ddd">' + l + '</td></tr>';
+        }).join('') +
+        (data.savings > 0
+          ? '<tr><td style="border-bottom:1px solid #ddd;color:#b7791f">Savings: −$' +
+            Number(data.savings).toLocaleString() + '</td></tr>' : '') +
+        '<tr><td style="font-weight:bold;font-size:16px">Total: $' +
+        Number(data.total).toLocaleString() + '</td></tr></table>';
+
+      try {
+        MailApp.sendEmail({
+          to: data.email,
+          replyTo: "kodaironview@gmail.com",
+          subject: "Your Koda Iron Games sponsorship quote — $" + Number(data.total).toLocaleString(),
+          htmlBody:
+            '<p>Hi ' + data.contact + ',</p>' +
+            '<p>Thanks for building a sponsorship package for the <b>Koda Iron Games</b>! Here is your quote:</p>' +
+            quoteHtml +
+            '<p>Kevin will reach out within 1–2 business days to finalize details and reserve your spots. ' +
+            'Questions in the meantime? Just reply to this email or call/text 630-292-0725.</p>' +
+            '<p>— Kevin Schuetz<br>Koda Iron Games · Presented by WODprep</p>'
+        });
+      } catch (eMail) { /* lead is already in the sheet — keep going */ }
+
+      MailApp.sendEmail({
+        to: "kevschuetz3@gmail.com",
+        subject: "💰 New sponsor quote: " + data.company + " — $" + Number(data.total).toLocaleString(),
+        htmlBody:
+          '<p><b>' + data.company + '</b> just built a package on the sponsor site.</p>' +
+          '<p>Contact: ' + data.contact + ' · <a href="mailto:' + data.email + '">' + data.email + '</a>' +
+          (data.phone ? ' · ' + data.phone : '') + '</p>' + quoteHtml +
+          (data.notes ? '<p><b>Notes:</b> ' + data.notes + '</p>' : '') +
+          '<p>Logged in the "Koda Iron Games Sponsor Quotes" sheet.</p>'
+      });
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -525,6 +619,35 @@ function doGet(e) {
     return getAllSubmissions();
   }
 
+  // ── All sponsor menu tabs in one response (consumed live by the sponsor site) ──
+  if (action === "sponsorMenuData") {
+    var dataId = PropertiesService.getScriptProperties().getProperty("SPONSOR_MENU_SHEET_ID");
+    if (!dataId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var dataSs = SpreadsheetApp.openById(dataId);
+    var menuOut = { status: "ok" };
+    ["Benefits", "Bundles", "Discount Ladder", "Open Questions"].forEach(function (nm) {
+      var msh = dataSs.getSheetByName(nm);
+      menuOut[nm] = msh ? msh.getDataRange().getValues() : [];
+    });
+    return ContentService.createTextOutput(JSON.stringify(menuOut))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Sponsor quotes sheet info (created on first quote submission) ──
+  if (action === "sponsorQuotesInfo") {
+    var quotesId = PropertiesService.getScriptProperties().getProperty("SPONSOR_QUOTES_SHEET_ID");
+    if (!quotesId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var quotesSs = SpreadsheetApp.openById(quotesId);
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: quotesSs.getUrl(), id: quotesId }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // ── Sponsor menu sheet info (URL/id recovery without re-creating) ──
   if (action === "sponsorMenuInfo") {
     var menuId = PropertiesService.getScriptProperties().getProperty("SPONSOR_MENU_SHEET_ID");
@@ -652,18 +775,38 @@ function getLastWeekData(coachName) {
 }
 
 // ── Email Reminders ──
-function sendReminderEmails() {
+var EARLY_REMINDER_NOTE =
+  "<p><b>Heads up:</b> this week's availability reminder is going out a couple of days earlier " +
+  "than usual so next week's schedule can be sent out earlier.</p>";
+
+function getNextMondayForReminder_() {
+  // The Monday of the week being scheduled next. On Sunday this is the Monday
+  // 8 days out — the week starting tomorrow is already scheduled.
+  var today = new Date();
+  var day = today.getDay();
+  var diff = (day === 0) ? 8 : 8 - day;
+  var nextMon = new Date(today);
+  nextMon.setDate(today.getDate() + diff);
+  return nextMon;
+}
+
+function buildReminderHtml_(name, nextMon, extraNote) {
+  var formUrl = "https://kevschuetz3-lgtm.github.io/koda-coaching/";
+  return "<p>Hey " + name + ",</p>" +
+    (extraNote || "") +
+    "<p>Friendly reminder to submit your coaching availability for the week of " +
+    Utilities.formatDate(nextMon, Session.getScriptTimeZone(), "MMM d, yyyy") + ". Please submit by end of day today.</p>" +
+    "<p><a href='" + formUrl + "' style='background:#4ade80;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;'>Submit Availability</a></p>" +
+    "<p>Thanks!</p>";
+}
+
+function sendReminderCore_(extraNote) {
   var id = PropertiesService.getScriptProperties().getProperty("SHEET_ID");
   var ss = SpreadsheetApp.openById(id);
   var sheet = ss.getSheetByName("Submissions");
   var data = sheet.getDataRange().getValues();
 
-  // Figure out next Monday's date
-  var today = new Date();
-  var day = today.getDay();
-  var diff = (day === 0) ? 1 : 8 - day;
-  var nextMon = new Date(today);
-  nextMon.setDate(today.getDate() + diff);
+  var nextMon = getNextMondayForReminder_();
   var nextMonStr = Utilities.formatDate(nextMon, Session.getScriptTimeZone(), "yyyy-MM-dd");
 
   // Find who has already submitted for next week
@@ -680,25 +823,31 @@ function sendReminderEmails() {
   }
 
   // Email coaches who haven't submitted (only if they have an email set)
-  var formUrl = "https://kevschuetz3-lgtm.github.io/koda-coaching/";
-
   Object.keys(COACHES).forEach(function(name) {
     var email = COACHES[name];
     if (email && !submitted[name]) {
       MailApp.sendEmail({
         to: email,
         subject: "Koda CrossFit — Submit Your Availability for Next Week",
-        htmlBody:
-          "<p>Hey " + name + ",</p>" +
-          "<p>Friendly reminder to submit your coaching availability for the week of " +
-          Utilities.formatDate(nextMon, Session.getScriptTimeZone(), "MMM d, yyyy") + ". Please submit by end of day today.</p>" +
-          "<p><a href='" + formUrl + "' style='background:#4ade80;color:#1a1a2e;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;'>Submit Availability</a></p>" +
-          "<p>Thanks!</p>"
+        htmlBody: buildReminderHtml_(name, nextMon, extraNote)
       });
     }
   });
 
   Logger.log("Reminders sent. Already submitted: " + Object.keys(submitted).join(", "));
+}
+
+function sendReminderEmails() {
+  sendReminderCore_(null);
+}
+
+// One-off early reminder — created via doPost {action:'scheduleEarlyReminder'};
+// deletes its own trigger(s) so it only ever fires once.
+function sendEarlyReminderOneOff() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "sendEarlyReminderOneOff") ScriptApp.deleteTrigger(t);
+  });
+  sendReminderCore_(EARLY_REMINDER_NOTE);
 }
 
 // ── Manual: Send reminders right now (for testing) ──
