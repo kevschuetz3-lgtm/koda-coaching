@@ -30,7 +30,7 @@ var COACHES = {
   "Doc Em": "upstanderchiropractic@gmail.com",
   "Casey": "caseymskram@gmail.com",
   "Maggie": "maggie.kerrigan0@gmail.com",
-  "Riley": "riley.mcnamara@comcast.net",
+  "Riley": "riley.mcnamara1@gmail.com",
   "Jamie": "primakow@gmail.com",
   "Dani": "danisakala0@gmail.com",
   "Isabelle": "isabellesneller@gmail.com",
@@ -261,6 +261,197 @@ function doPost(e) {
       });
 
       return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Receive a team apparel kit from the Iron Games kit builder ──
+    // Logs to the "Koda Iron Games Team Kits" sheet (auto-created), emails the
+    // print shop (kodacustomapparel@gmail.com) the full spec + mockup images,
+    // and sends the captain a confirmation copy.
+    if (data.action === "ironGamesKit") {
+      var kProps = PropertiesService.getScriptProperties();
+      var kId = kProps.getProperty("IRON_KIT_SHEET_ID");
+      var kss = null;
+      if (kId) { try { kss = SpreadsheetApp.openById(kId); } catch (eK) { kss = null; } }
+      if (!kss) {
+        kss = SpreadsheetApp.create("Koda Iron Games Team Kits");
+        kss.getSheets()[0].setName("Kits")
+          .getRange(1, 1, 1, 16).setValues([[
+            "Timestamp", "Division", "Team Name", "Captain", "Captain Email",
+            "D1 Garment", "D1 Shirt Color", "D1 Print 1 (name/KIG26/sleeve)", "D1 Print 2 (VI/flag)", "D1 Sizes",
+            "D2 Garment", "D2 Shirt Color", "D2 Print 1 (name/KIG26/sleeve)", "D2 Print 2 (VI/flag)", "D2 Sizes",
+            "Page"
+          ]]).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+        kss.getSheets()[0].setFrozenRows(1);
+        kProps.setProperty("IRON_KIT_SHEET_ID", kss.getId());
+      }
+      var ksh = kss.getSheetByName("Kits") || kss.getSheets()[0];
+      var d1 = data.day1 || {}, d2 = data.day2 || {};
+      var cap = data.captain || {};
+      ksh.appendRow([
+        new Date(), data.division || "", data.teamName || "", cap.name || "", cap.email || "",
+        d1.garment || "", d1.color || "", d1.print1 || "", d1.print2 || "", (d1.sizes || []).join(" / "),
+        d2.garment || "", d2.color || "", d2.print1 || "", d2.print2 || "", (d2.sizes || []).join(" / "),
+        data.page || ""
+      ]);
+
+      var kitAttachments = [];
+      (data.mockups || []).forEach(function (m) {
+        try {
+          kitAttachments.push(Utilities.newBlob(Utilities.base64Decode(m.data), m.mimeType, m.fileName));
+        } catch (eB) { /* skip bad attachment */ }
+      });
+
+      function kitDayHtml(label, dd) {
+        return '<tr><td style="border:1px solid #ddd;padding:8px;font-weight:bold;white-space:nowrap">' + label + '</td>' +
+          '<td style="border:1px solid #ddd;padding:8px">' + (dd.color || "?") + " — " + (dd.garment || "?") + '</td>' +
+          '<td style="border:1px solid #ddd;padding:8px">Print 1: <b>' + (dd.print1 || "?") + '</b><br>Print 2: <b>' + (dd.print2 || "?") + '</b></td>' +
+          '<td style="border:1px solid #ddd;padding:8px">' + (dd.sizes || []).join(" / ") + '</td></tr>';
+      }
+      var kitTable =
+        '<table cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+        '<tr><td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"></td>' +
+        '<td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"><b>Shirt</b></td>' +
+        '<td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"><b>Vinyl colors</b></td>' +
+        '<td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"><b>Sizes</b></td></tr>' +
+        kitDayHtml("Day 1", d1) + kitDayHtml("Day 2", d2) + '</table>' +
+        '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Print 1 = team name + "Koda Iron Games 26" + sleeve logo &nbsp;•&nbsp; Print 2 = VI mark/line + Colorado flag on upper back</p>';
+
+      MailApp.sendEmail({
+        to: "kodacustomapparel@gmail.com",
+        replyTo: cap.email || "kodaironview@gmail.com",
+        subject: "👕 Iron Games team kit: " + (data.teamName || "?") + " (" + (data.division || "?") + ")",
+        htmlBody:
+          '<p style="font-family:Arial,sans-serif"><b>' + (data.teamName || "?") + '</b> — ' + (data.division || "?") + ' — just submitted their kit.</p>' +
+          '<p style="font-family:Arial,sans-serif">Captain: ' + (cap.name || "?") + ' · <a href="mailto:' + (cap.email || "") + '">' + (cap.email || "") + '</a></p>' +
+          kitTable +
+          '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Logged in the "Koda Iron Games Team Kits" sheet. Mockups attached.</p>',
+        attachments: kitAttachments
+      });
+
+      if (cap.email) {
+        try {
+          MailApp.sendEmail({
+            to: cap.email,
+            replyTo: "kodacustomapparel@gmail.com",
+            subject: "Your Koda Iron Games 26 team kit is locked in — " + (data.teamName || ""),
+            htmlBody:
+              '<p style="font-family:Arial,sans-serif">Hey ' + (cap.name || "captain") + ',</p>' +
+              '<p style="font-family:Arial,sans-serif">Your team kit for <b>' + (data.teamName || "your team") + '</b> (' + (data.division || "") + ') is in the print queue for the Koda Iron Games, October 3–4. Here’s what you picked:</p>' +
+              kitTable +
+              '<p style="font-family:Arial,sans-serif">Mockups of both shirts are attached. Need to change anything? Email <a href="mailto:kodacustomapparel@gmail.com">kodacustomapparel@gmail.com</a> by <b>September 18</b>.</p>' +
+              '<p style="font-family:Arial,sans-serif">See you on the floor,<br>Koda Iron Games • Presented by WODprep</p>',
+            attachments: kitAttachments
+          });
+        } catch (eMail2) { /* order is already logged + sent to the shop — keep going */ }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Digital waiver submission (koda-waiver site) ──
+    // Logs to the "Koda CrossFit Iron View Waivers" sheet (auto-created), renders
+    // a signed PDF (full waiver text + drawn signature) into the "Koda Waivers
+    // (Signed PDFs)" Drive folder, emails the athlete their copy + notifies Kevin.
+    // Drive save is best-effort: if the Drive scope isn't authorized yet, the
+    // row still lands and the PDF still rides along as an email attachment.
+    if (data.action === "waiverSubmit") {
+      var wProps = PropertiesService.getScriptProperties();
+      var wId = wProps.getProperty("WAIVER_SHEET_ID");
+      var wss = null;
+      if (wId) { try { wss = SpreadsheetApp.openById(wId); } catch (eW) { wss = null; } }
+      if (!wss) {
+        wss = SpreadsheetApp.create("Koda CrossFit Iron View Waivers");
+        wss.getSheets()[0].setName("Waivers")
+          .getRange(1, 1, 1, 10).setValues([[
+            "Timestamp", "Athlete Name", "Under 18", "Parent/Guardian", "Email",
+            "Referred By", "Program", "Date Signed", "Signed PDF", "Device"
+          ]]).setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
+        wss.getSheets()[0].setFrozenRows(1);
+        wProps.setProperty("WAIVER_SHEET_ID", wss.getId());
+      }
+
+      // Sheets created before the Program column existed: insert it after "Referred By"
+      var wSheet = wss.getSheetByName("Waivers");
+      var wHead = wSheet.getRange(1, 1, 1, wSheet.getLastColumn()).getValues()[0];
+      if (wHead.indexOf("Program") === -1) {
+        wSheet.insertColumnAfter(6);
+        wSheet.getRange(1, 7).setValue("Program")
+          .setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
+      }
+
+      var athlete = String(data.athleteName || "").trim();
+      var guardian = String(data.guardianName || "").trim();
+      var wMinor = !!data.isMinor;
+      var wEmail = String(data.email || "").trim();
+      var wReferred = String(data.referredBy || "").trim();
+      var wProgram = String(data.program || "").trim();
+      var wDate = String(data.dateSigned || Utilities.formatDate(new Date(), "America/Denver", "yyyy-MM-dd"));
+
+      var pdfBlob = null, pdfUrl = "", pdfNote = "";
+      try {
+        var wHtml = buildWaiverPdfHtml_(athlete, wMinor, guardian, wEmail, wReferred, wProgram, wDate,
+          String(data.signaturePng || ""));
+        pdfBlob = Utilities.newBlob(wHtml, "text/html", "waiver.html")
+          .getAs("application/pdf")
+          .setName("Koda Waiver - " + (athlete || "Unknown") + " - " + wDate + ".pdf");
+      } catch (ePdf) { pdfNote = "PDF render failed: " + ePdf; }
+
+      if (pdfBlob) {
+        try {
+          var wFolderId = wProps.getProperty("WAIVER_FOLDER_ID");
+          var wFolder = null;
+          if (wFolderId) { try { wFolder = DriveApp.getFolderById(wFolderId); } catch (eF) { wFolder = null; } }
+          if (!wFolder) {
+            wFolder = DriveApp.createFolder("Koda Waivers (Signed PDFs)");
+            wProps.setProperty("WAIVER_FOLDER_ID", wFolder.getId());
+          }
+          pdfUrl = wFolder.createFile(pdfBlob).getUrl();
+        } catch (eDrive) {
+          pdfNote = "Drive save skipped (authorize Drive for this script): " + eDrive;
+        }
+      }
+
+      wSheet.appendRow([
+        new Date(), athlete, wMinor ? "Yes" : "", guardian, wEmail, wReferred, wProgram, wDate,
+        pdfUrl || pdfNote, String(data.userAgent || "").slice(0, 250)
+      ]);
+
+      try {
+        MailApp.sendEmail({
+          to: "kevschuetz3@gmail.com",
+          subject: "📝 Waiver signed: " + athlete + (wProgram ? " — " + wProgram : "") + (wMinor ? " (minor)" : ""),
+          htmlBody:
+            '<p style="font-family:Arial,sans-serif"><b>' + escHtml_(athlete) + '</b> just signed the Koda CrossFit Iron View waiver.' +
+            (wMinor ? '<br>Signed by parent/guardian: <b>' + escHtml_(guardian) + '</b>' : '') + '</p>' +
+            '<p style="font-family:Arial,sans-serif">Email: <a href="mailto:' + escHtml_(wEmail) + '">' + escHtml_(wEmail) + '</a>' +
+            (wProgram ? '<br>Program: <b>' + escHtml_(wProgram) + '</b>' : '') +
+            (wReferred ? '<br>Referred by: ' + escHtml_(wReferred) : '') +
+            (pdfUrl ? '<br><a href="' + pdfUrl + '">Signed PDF in Drive</a>' : (pdfNote ? '<br>' + escHtml_(pdfNote) : '')) + '</p>' +
+            '<p style="font-family:Arial,sans-serif;color:#777">Logged in the "Koda CrossFit Iron View Waivers" sheet. Signed copy attached.</p>',
+          attachments: pdfBlob ? [pdfBlob] : []
+        });
+      } catch (eN1) { /* sheet row is already in — keep going */ }
+
+      if (wEmail) {
+        try {
+          MailApp.sendEmail({
+            to: wEmail,
+            replyTo: "kodaironview@gmail.com",
+            subject: "Your signed waiver — Koda CrossFit Iron View",
+            htmlBody:
+              '<p style="font-family:Arial,sans-serif">Hi ' + escHtml_((wMinor && guardian ? guardian : athlete).split(" ")[0]) + ',</p>' +
+              '<p style="font-family:Arial,sans-serif">Thanks for completing the Koda CrossFit Iron View waiver' +
+              (wMinor ? ' on behalf of ' + escHtml_(athlete) : '') +
+              '. A copy of the signed waiver is attached for your records.</p>' +
+              '<p style="font-family:Arial,sans-serif">See you at the gym!<br>— Koda CrossFit Iron View</p>',
+            attachments: pdfBlob ? [pdfBlob] : []
+          });
+        } catch (eN2) { /* non-fatal */ }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", pdfUrl: pdfUrl, note: pdfNote }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -657,6 +848,36 @@ function doGet(e) {
     var quotesSs = SpreadsheetApp.openById(quotesId);
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: quotesSs.getUrl(), id: quotesId }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Team kits sheet info (created on first kit submission) ──
+  if (action === "ironGamesKitsInfo") {
+    var kitsId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    if (!kitsId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var kitsSs = SpreadsheetApp.openById(kitsId);
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: kitsSs.getUrl(), id: kitsId }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Waivers sheet/folder info (created on first waiver submission) ──
+  if (action === "waiversInfo") {
+    var wvProps = PropertiesService.getScriptProperties();
+    var wvId = wvProps.getProperty("WAIVER_SHEET_ID");
+    var wvFolder = wvProps.getProperty("WAIVER_FOLDER_ID");
+    if (!wvId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var wvSs = SpreadsheetApp.openById(wvId);
+    var wvSheet = wvSs.getSheetByName("Waivers") || wvSs.getSheets()[0];
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok", url: wvSs.getUrl(), id: wvId,
+      count: Math.max(0, wvSheet.getLastRow() - 1),
+      folderUrl: wvFolder ? "https://drive.google.com/drive/folders/" + wvFolder : ""
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   // ── Sponsor menu sheet info (URL/id recovery without re-creating) ──
@@ -1077,4 +1298,74 @@ function buildCoachGrid(sheet, coachName, availableSlots, notes, noSubmission, w
   }
   sheet.getRange(startRow, 1, GRID_ROWS.length, 7)
     .setBorder(true, true, true, true, true, true);
+}
+
+// ══════════════ Digital waiver helpers ══════════════
+
+function escHtml_(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Renders the signed waiver as print-ready HTML (converted to PDF by the caller).
+// Mirrors the paper "Koda CrossFit Iron View Digital Waiver" text verbatim.
+function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, program, dateSigned, sigB64) {
+  var recorded = Utilities.formatDate(new Date(), "America/Denver", "MMMM d, yyyy h:mm a") + " Mountain Time";
+  var sigImg = sigB64
+    ? '<img src="data:image/png;base64,' + sigB64 + '" style="height:58px" alt="signature">'
+    : '<span style="color:#999">[no signature image]</span>';
+
+  return '' +
+    '<html><head><meta charset="UTF-8"><style>' +
+    '@page { size: Letter; margin: 0.7in 0.75in; }' +
+    'body { font-family: Arial, Helvetica, sans-serif; font-size: 10.3pt; color: #111; line-height: 1.45; }' +
+    'h1 { font-size: 13.5pt; text-align: center; margin: 0 0 10px; }' +
+    'h2 { font-size: 11pt; text-align: center; margin: 14px 0 6px; }' +
+    'p { margin: 0 0 8px; }' +
+    '.caps { font-weight: bold; }' +
+    'td { vertical-align: bottom; font-size: 9.5pt; }' +
+    '.sigline { border-top: 1px solid #111; padding-top: 3px; }' +
+    '.meta { color: #555; font-size: 8.5pt; margin-top: 16px; text-align: center; }' +
+    '</style></head><body>' +
+    '<h1>Koda CrossFit Iron View Waiver and Release</h1>' +
+    '<p>This form is an important legal document. It explains the risks you are assuming by participation in classes and workouts at Koda CrossFit Iron View. It is important that you read and understand it completely. After you have done so, please fill out and execute at the bottom.</p>' +
+    '<h2>Waiver, Informed Consent, and Covenant Not to Sue</h2>' +
+    '<p>I have willingly volunteered to participate in physical conditioning and activities under the direction of Koda CrossFit Iron View, which will include, but may not be limited to, weight, endurance, and/or resistance training. I do here and forever release and discharge and hereby hold harmless Koda CrossFit Iron View and its respective agents, heirs, assigns, contractors, volunteers, sponsors, judges, and employees from any and all claims, demands, damages, rights of action, or causes of action, present or future, arising out of or connected with my participation in activities at Koda CrossFit Iron View, including any injuries resulting therefrom. <span class="caps">THIS WAIVER AND RELEASE OF LIABILITY INCLUDES, WITHOUT LIMITATION, INJURIES WHICH MAY OCCUR AS A RESULT OF (1) EQUIPMENT THAT MAY MALFUNCTION OR BREAK, (2) ANY SLIP, FALL, OR DROPPING OF EQUIPMENT, AND (3) NEGLIGENT INSTRUCTION OR SUPERVISION.</span></p>' +
+    '<h2>Assumption of Risk</h2>' +
+    '<p>I recognize that exercise might be difficult and strenuous and that there could be dangers inherent in exercise for some individuals. I acknowledge that certain unusual physical changes during exercise may occur. These changes include abnormal blood pressure, fainting, disorders in heartbeat, heart attack, and, in rare instances, death.</p>' +
+    '<p>I understand that as a result of my willing participation in activities at Koda CrossFit Iron View, I could suffer an injury or physical disorder that could result in my becoming partially or totally disabled and incapable of performing any gainful employment or having a normal social life.</p>' +
+    '<p>As a willing participant in activities at Koda CrossFit Iron View, I represent and warrant that I have been examined by a competent physician who has determined that I am physically capable of participating in such activities.</p>' +
+    '<p>I acknowledge and agree that I assume the risks associated with any and all activities and/or exercises in which I participate. I understand and acknowledge that I may terminate my participation in any physical activity at any time for any reason I deem necessary.</p>' +
+    '<p class="caps">I ACKNOWLEDGE THAT I HAVE READ THIS WAIVER AND RELEASE AND FULLY UNDERSTAND THAT IT IS A RELEASE OF LIABILITY. BY SIGNING THIS DOCUMENT, I AM WAIVING ANY RIGHT I OR MY SUCCESSORS MIGHT HAVE TO BRING LEGAL ACTION OR ASSERT A CLAIM AGAINST KODA CROSSFIT IRON VIEW AND/OR THE OTHERS REFERRED TO IN THIS DOCUMENT FOR ANY NEGLIGENCE.</p>' +
+    '<h2>Photography and Audio/Video Recording</h2>' +
+    '<p>I hereby give Koda CrossFit Iron View permission to video tape, photograph, and record my image and/or my likeness during my participation in any activities at Koda CrossFit Iron View. I also understand that giving this permission is in no way an endorsement of Koda CrossFit Iron View or any products distributed by Koda CrossFit Iron View.</p>' +
+    '<p class="caps">I HAVE CAREFULLY READ THIS DOCUMENT AND I FULLY UNDERSTAND ITS CONTENTS. I AM AWARE THAT THIS IS A RELEASE OF LIABILITY AND A CONTRACT BETWEEN ME AND KODA CROSSFIT IRON VIEW.</p>' +
+    '<table width="100%" cellspacing="0" cellpadding="4" style="margin-top:18px">' +
+    '<tr>' +
+    '<td width="40%">' + escHtml_(athlete) + '</td>' +
+    '<td width="4%"></td>' +
+    '<td width="40%">' + sigImg + '</td>' +
+    '<td width="4%"></td>' +
+    '<td width="12%">' + escHtml_(dateSigned) + '</td>' +
+    '</tr><tr>' +
+    '<td class="sigline">Athlete&#39;s Name (printed)</td><td></td>' +
+    '<td class="sigline">' + (isMinor ? 'Parent/Guardian Signature (athlete under 18)' : 'Signature') + '</td><td></td>' +
+    '<td class="sigline">Date</td>' +
+    '</tr>' +
+    (isMinor
+      ? '<tr><td style="padding-top:10px">' + escHtml_(guardian) + '</td><td></td><td></td><td></td><td></td></tr>' +
+        '<tr><td class="sigline">Parent/Guardian Name (printed)</td><td></td><td></td><td></td><td></td></tr>'
+      : '') +
+    '<tr><td style="padding-top:10px">' + escHtml_(email) + '</td><td></td>' +
+    '<td style="padding-top:10px">' + escHtml_(referredBy) + '</td><td></td><td></td></tr>' +
+    '<tr><td class="sigline">E-mail Address For Follow Up</td><td></td>' +
+    '<td class="sigline">Referred By</td><td></td><td></td></tr>' +
+    (program
+      ? '<tr><td style="padding-top:10px">' + escHtml_(program) + '</td><td></td><td></td><td></td><td></td></tr>' +
+        '<tr><td class="sigline">Class Program</td><td></td><td></td><td></td><td></td></tr>'
+      : '') +
+    '</table>' +
+    '<p class="meta">Executed electronically via the Koda CrossFit Iron View digital waiver page &middot; Recorded ' + recorded + '</p>' +
+    '</body></html>';
 }
