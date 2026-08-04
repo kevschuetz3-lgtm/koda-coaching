@@ -350,6 +350,54 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Log a team's photo-package flash-sale answer (yes / maybe / no) ──
+    // Appended to a "Photo Interest" tab in the Team Kits spreadsheet so Kevin
+    // can follow up with the maybes.
+    if (data.action === "ironGamesPhotoInterest") {
+      var piProps = PropertiesService.getScriptProperties();
+      var piId = piProps.getProperty("IRON_KIT_SHEET_ID");
+      var piSs = null;
+      if (piId) { try { piSs = SpreadsheetApp.openById(piId); } catch (ePi) { piSs = null; } }
+      if (!piSs) {
+        piSs = SpreadsheetApp.create("Koda Iron Games Team Kits");
+        piProps.setProperty("IRON_KIT_SHEET_ID", piSs.getId());
+      }
+      var piSh = piSs.getSheetByName("Photo Interest");
+      if (!piSh) {
+        piSh = piSs.insertSheet("Photo Interest");
+        piSh.getRange(1, 1, 1, 6).setValues([[
+          "Timestamp", "Team Name", "Division", "Captain", "Captain Email", "Answer"
+        ]]).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+        piSh.setFrozenRows(1);
+      }
+      var piCap = data.captain || {};
+      piSh.appendRow([
+        new Date(), data.teamName || "", data.division || "",
+        piCap.name || "", piCap.email || "", data.choice || ""
+      ]);
+
+      // Maybe / No -> email the captain the flash-sale offer so they can convert later.
+      // (Yes-clickers are already at checkout — no email.)
+      if ((data.choice === "maybe" || data.choice === "no") && piCap.email) {
+        try {
+          MailApp.sendEmail({
+            to: piCap.email,
+            replyTo: "kodacustomapparel@gmail.com",
+            subject: "Flash Sale: Team Photo Package — $99 for " + (data.teamName || "your team"),
+            htmlBody:
+              '<p style="font-family:Arial,sans-serif;font-size:30px;font-weight:bold;color:#131313;margin:0 0 14px">Flash Sale: Team Photo Package</p>' +
+              '<p style="font-family:Arial,sans-serif;font-size:15px;color:#333;margin:0 0 14px">Hey ' + (piCap.name || "captain") + ' — our professional photographers will shoot the competition floor all weekend. Lock in <b>' + (data.teamName || "your team") + '</b>’s high-res event photos at the flash price — the same package was $199 in 2025.</p>' +
+              '<p style="font-family:Arial,sans-serif;margin:0 0 18px"><s style="font-size:22px;color:#888888">$199</s>&nbsp;&nbsp;<b style="font-size:40px;color:#d4291a">$99</b></p>' +
+              '<a href="https://kodaironview.sites.zenplanner.com/retail-product.cfm?productId=75B7E176-C93B-44C3-B5DA-7753F1B0E5CB" style="font-family:Arial,sans-serif;display:inline-block;background:#d4291a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;padding:12px 22px;border-radius:8px">Get the $99 package &rarr;</a>' +
+              '<p style="font-family:Arial,sans-serif;font-size:12.5px;color:#777;margin:18px 0 0">Questions? Just reply to this email.<br>Koda Iron Games • Presented by WODprep</p>'
+          });
+        } catch (ePiMail) { /* the answer is logged either way */ }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Digital waiver submission (koda-waiver site) ──
     // Logs to the "Koda CrossFit Iron View Waivers" sheet (auto-created), renders
     // a signed PDF (full waiver text + drawn signature) into the "Koda Waivers
@@ -418,9 +466,12 @@ function doPost(e) {
         pdfUrl || pdfNote, String(data.userAgent || "").slice(0, 250)
       ]);
 
+      // Kids/Teens waivers also notify the kids program coach
+      var wNotifyTo = "kevschuetz3@gmail.com";
+      if (/kids\s*\/?\s*teens/i.test(wProgram)) wNotifyTo += ",eacoyle@gmail.com";
       try {
         MailApp.sendEmail({
-          to: "kevschuetz3@gmail.com",
+          to: wNotifyTo,
           subject: "📝 Waiver signed: " + athlete + (wProgram ? " — " + wProgram : "") + (wMinor ? " (minor)" : ""),
           htmlBody:
             '<p style="font-family:Arial,sans-serif"><b>' + escHtml_(athlete) + '</b> just signed the Koda CrossFit Iron View waiver.' +
@@ -848,6 +899,88 @@ function doGet(e) {
     var quotesSs = SpreadsheetApp.openById(quotesId);
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: quotesSs.getUrl(), id: quotesId }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Rebuild the "Shirt Tally" tab in the Team Kits sheet ──
+  // Dedupes to each team's latest submission, tallies color×garment×size,
+  // rewrites the tab, and returns the numbers. Call any time to refresh.
+  if (action === "ironGamesShirtTally") {
+    var tallyId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    if (!tallyId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var tSs = SpreadsheetApp.openById(tallyId);
+    var kitsSh2 = tSs.getSheetByName("Kits") || tSs.getSheets()[0];
+    var vals = kitsSh2.getDataRange().getValues();
+    var thead = vals[0];
+    function tCol(p) {
+      for (var i = 0; i < thead.length; i++) {
+        if (String(thead[i]).toLowerCase().indexOf(p.toLowerCase()) === 0) return i;
+      }
+      return -1;
+    }
+    var tTeam = tCol("Team Name"), tDiv = tCol("Division");
+    var tCols = [
+      { g: tCol("D1 Garment"), c: tCol("D1 Shirt Color"), s: tCol("D1 Sizes") },
+      { g: tCol("D2 Garment"), c: tCol("D2 Shirt Color"), s: tCol("D2 Sizes") }
+    ];
+    var byTeam = {}, teamOrder = [];
+    for (var vr = 1; vr < vals.length; vr++) {
+      var vrow = vals[vr];
+      var vteam = String(vrow[tTeam] || "");
+      if (!vteam || /test/i.test(vteam)) continue;
+      var vkey = vteam + "§" + vrow[tDiv];
+      if (!(vkey in byTeam)) teamOrder.push(vkey);
+      byTeam[vkey] = vrow;   // later row wins
+    }
+    var T_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+    var tTally = {}, tGrand = 0;
+    teamOrder.forEach(function (vkey) {
+      var row = byTeam[vkey];
+      tCols.forEach(function (cn) {
+        var g = String(row[cn.g] || "").replace("Bella+Canvas ", "");
+        var c = String(row[cn.c] || "");
+        var k2 = c + "|" + g;
+        if (!tTally[k2]) tTally[k2] = { c: c, g: g, total: 0, sizes: {} };
+        String(row[cn.s] || "").split("/").forEach(function (t) {
+          t = t.trim().toUpperCase();
+          if (!t) return;
+          tTally[k2].sizes[t] = (tTally[k2].sizes[t] || 0) + 1;
+          tTally[k2].total++; tGrand++;
+        });
+      });
+    });
+    var tList = Object.keys(tTally).map(function (k2) { return tTally[k2]; })
+      .sort(function (a, b) { return b.total - a.total; });
+    var tallySh = tSs.getSheetByName("Shirt Tally");
+    if (!tallySh) tallySh = tSs.insertSheet("Shirt Tally"); else tallySh.clear();
+    var out = [
+      ["Shirt Tally — refreshed " + Utilities.formatDate(new Date(), "America/Denver", "M/d/yyyy h:mm a") +
+        " — latest submission per team (" + teamOrder.length + " teams, " + tGrand + " shirts)", "", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", ""],
+      ["Shirt Color", "Garment", "XS", "S", "M", "L", "XL", "XXL", "Total"]
+    ];
+    var tSizeTotals = {};
+    tList.forEach(function (t3) {
+      var r3 = [t3.c, t3.g];
+      T_SIZES.forEach(function (s) { r3.push(t3.sizes[s] || 0); tSizeTotals[s] = (tSizeTotals[s] || 0) + (t3.sizes[s] || 0); });
+      r3.push(t3.total);
+      out.push(r3);
+    });
+    var tTotRow = ["TOTAL", ""];
+    T_SIZES.forEach(function (s) { tTotRow.push(tSizeTotals[s] || 0); });
+    tTotRow.push(tGrand);
+    out.push(tTotRow);
+    tallySh.getRange(1, 1, out.length, 9).setValues(out);
+    tallySh.getRange(1, 1).setFontWeight("bold");
+    tallySh.getRange(3, 1, 1, 9).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+    tallySh.getRange(out.length, 1, 1, 9).setFontWeight("bold").setBackground("#f2f2f2");
+    tallySh.setFrozenRows(3);
+    tallySh.autoResizeColumns(1, 9);
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok", teams: teamOrder.length, shirts: tGrand, styles: tList.length, url: tSs.getUrl()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   // ── Team kits sheet info (created on first kit submission) ──
