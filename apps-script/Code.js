@@ -22,6 +22,9 @@
  *    Deploy → Manage deployments → Edit (pencil icon) → Version: New version → Deploy
  */
 
+// ── Kevin's membership-leads spreadsheet (local trial waivers append here) ──
+var WAIVER_LEADS_SHEET_ID = "1veZqZSJxUrKoAHM-5vePGfV-Fj5su4Q16L2JB9mXb-I";
+
 // ── Coach roster with emails (add emails to enable reminders) ──
 var COACHES = {
   "Nate": "natemroy@gmail.com",
@@ -653,6 +656,13 @@ function doPost(e) {
         pdfUrl || pdfNote, String(data.userAgent || "").slice(0, 250)
       ]);
 
+      // Local trial-class signers are membership leads — mirror them into the leads sheet
+      var wLeadNote = "";
+      if (!wIsDropin) {
+        try { wLeadNote = appendWaiverLead_(athlete, wEmail, wProgram, wReferred, wMinor, guardian, new Date()); }
+        catch (eLead) { wLeadNote = "leads sheet update FAILED: " + eLead; }
+      }
+
       // Kids/Teens waivers also notify the kids program coach
       var wNotifyTo = "kevschuetz3@gmail.com";
       if (/kids\s*\/?\s*teens/i.test(wProgram)) wNotifyTo += ",eacoyle@gmail.com";
@@ -671,6 +681,7 @@ function doPost(e) {
             (wVisitDur ? '<br>Stay: <b>' + escHtml_(wVisitDur) + '</b>' : '') +
             (wVisitPay ? '<br>Paying by: <b>' + escHtml_(wVisitPay) + '</b>' : '') +
             (wReferred ? '<br>Referred by: ' + escHtml_(wReferred) : '') +
+            (wLeadNote ? '<br>Leads sheet: ' + escHtml_(wLeadNote) : '') +
             (pdfUrl ? '<br><a href="' + pdfUrl + '">Signed PDF in Drive</a>' : (pdfNote ? '<br>' + escHtml_(pdfNote) : '')) + '</p>' +
             '<p style="font-family:Arial,sans-serif;color:#777">Logged in the "Koda CrossFit Iron View Waivers" sheet. Signed copy attached.</p>',
           attachments: pdfBlob ? [pdfBlob] : []
@@ -690,9 +701,12 @@ function doPost(e) {
             var wZenUrl = /\$60/.test(wVisitDur) ? wZen60 : wZen25;
             wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): if you haven&#8217;t already, you can pay your ' + wPrice +
               ' securely here: <a href="' + wZenUrl + '">' + wZenUrl + '</a>';
-          } else if (/venmo|zelle/i.test(wVisitPay)) {
-            wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): ' + wPrice + ' via ' + escHtml_(wVisitPay) +
-              ' &mdash; we&#8217;ll get you the details at the front desk if you don&#8217;t have them yet.';
+          } else if (/venmo/i.test(wVisitPay)) {
+            wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): send ' + wPrice +
+              ' on Venmo to <a href="https://venmo.com/u/kevin-schuetz-5">@kevin-schuetz-5</a> with your name in the note.';
+          } else if (/zelle/i.test(wVisitPay)) {
+            wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): send ' + wPrice +
+              ' via Zelle to kodaironview@gmail.com with your name in the memo.';
           } else if (/apparel/i.test(wVisitPay)) {
             wPayPara = "Drop-in payment: pick out $25 of Koda apparel at the front desk and your visit is covered.";
           }
@@ -715,6 +729,33 @@ function doPost(e) {
       }
 
       return ContentService.createTextOutput(JSON.stringify({ status: "ok", pdfUrl: pdfUrl, note: pdfNote }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Backfill recent waiver signers into the leads sheet ──
+    // payload: { action:"backfillWaiverLeads", count:N } — takes the N most
+    // recent waivers (skipping TEST rows and out-of-town drop-ins) and runs
+    // them through appendWaiverLead_, same as a live local submission.
+    if (data.action === "backfillWaiverLeads") {
+      var bfCount = Number(data.count) || 2;
+      var bfWId = PropertiesService.getScriptProperties().getProperty("WAIVER_SHEET_ID");
+      var bfSh = SpreadsheetApp.openById(bfWId).getSheetByName("Waivers");
+      var bfVals = bfSh.getDataRange().getValues();
+      var bfDone = [];
+      for (var bi = bfVals.length - 1; bi > 0 && bfDone.length < bfCount; bi--) {
+        var bfR = bfVals[bi];
+        var bfName = String(bfR[1] || "");
+        if (!bfName || /test\s*please\s*ignore|^test\b/i.test(bfName)) continue;
+        if (/drop-?in/i.test(String(bfR[7] || ""))) continue; // out-of-towners aren't membership leads
+        var bfNote;
+        try {
+          bfNote = appendWaiverLead_(bfName, bfR[4], bfR[6], bfR[5],
+            String(bfR[2] || "").toLowerCase() === "yes", bfR[3],
+            bfR[0] instanceof Date ? bfR[0] : new Date());
+        } catch (eBf) { bfNote = "FAILED: " + eBf; }
+        bfDone.push({ name: bfName, result: bfNote });
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", processed: bfDone }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1395,6 +1436,41 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ── Leads-sheet structure + recent waivers, PII-masked (integration scaffolding) ──
+  if (action === "waiverLeadsInfo") {
+    function mask_(v) {
+      return String(v || "")
+        .replace(/([A-Za-z0-9._%+-]{1,3})[A-Za-z0-9._%+-]*(@[^\s]+)/g, "$1…$2")
+        .replace(/\d(?=\d{4})/g, "*");
+    }
+    var liOut = { status: "ok" };
+    var liSs = SpreadsheetApp.openById(WAIVER_LEADS_SHEET_ID);
+    var liSh = null;
+    liSs.getSheets().forEach(function (s) { if (s.getSheetId() === 0) liSh = s; });
+    liSh = liSh || liSs.getSheets()[0];
+    var liLast = liSh.getLastRow(), liCols = liSh.getLastColumn();
+    liOut.leads = {
+      tab: liSh.getName(), rows: Math.max(0, liLast - 1), cols: liCols,
+      tabs: liSs.getSheets().map(function (s) { return s.getName() + " (gid " + s.getSheetId() + ", " + s.getLastRow() + "r)"; }),
+      headers: liCols ? liSh.getRange(1, 1, 1, liCols).getValues()[0] : [],
+      lastRows: liLast > 1 ? liSh.getRange(Math.max(2, liLast - 1), 1, Math.min(2, liLast - 1), liCols).getValues()
+        .map(function (r) { return r.map(mask_); }) : []
+    };
+    var liWId = PropertiesService.getScriptProperties().getProperty("WAIVER_SHEET_ID");
+    if (liWId) {
+      var liW = SpreadsheetApp.openById(liWId).getSheetByName("Waivers");
+      var liWLast = liW.getLastRow(), liWCols = liW.getLastColumn();
+      liOut.waivers = {
+        rows: Math.max(0, liWLast - 1),
+        headers: liW.getRange(1, 1, 1, liWCols).getValues()[0],
+        lastRows: liWLast > 1 ? liW.getRange(Math.max(2, liWLast - 3), 1, Math.min(4, liWLast - 1), liWCols).getValues()
+          .map(function (r) { return r.map(mask_); }) : []
+      };
+    }
+    return ContentService.createTextOutput(JSON.stringify(liOut))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // ── Sponsor menu sheet info (URL/id recovery without re-creating) ──
   if (action === "sponsorMenuInfo") {
     var menuId = PropertiesService.getScriptProperties().getProperty("SPONSOR_MENU_SHEET_ID");
@@ -1825,6 +1901,37 @@ function escHtml_(s) {
 
 // Renders the signed waiver as print-ready HTML (converted to PDF by the caller).
 // Mirrors the paper "Koda CrossFit Iron View Digital Waiver" text verbatim.
+// Append a local trial-class waiver signer to Kevin's membership-leads sheet
+// (gid 0 = "2025 Master List"). Dedupes by email; returns a short note for the
+// notification email. Columns: Stage, First, Last, Email, Phone, Notes,
+// Interaction Owner/Date, Contact Method, Track Interest, Column 1.
+function appendWaiverLead_(athlete, email, program, referred, isMinor, guardian, when) {
+  var ss = SpreadsheetApp.openById(WAIVER_LEADS_SHEET_ID);
+  var sh = null;
+  ss.getSheets().forEach(function (s) { if (s.getSheetId() === 0) sh = s; });
+  sh = sh || ss.getSheets()[0];
+  var emailLc = String(email || "").trim().toLowerCase();
+  if (emailLc && sh.getLastRow() > 1) {
+    var emails = sh.getRange(2, 4, sh.getLastRow() - 1, 1).getValues(); // col D = Email
+    for (var i = 0; i < emails.length; i++) {
+      if (String(emails[i][0] || "").trim().toLowerCase() === emailLc) {
+        return "already in leads sheet (row " + (i + 2) + ") — no new row added";
+      }
+    }
+  }
+  var parts = String(athlete || "").trim().split(/\s+/);
+  var first = parts.shift() || "";
+  var last = parts.join(" ");
+  var notes = "Signed digital waiver" + (program ? " — interested in " + program : "") +
+    (referred ? ". Referred by: " + referred : "") +
+    (isMinor && guardian ? ". Under 18 — parent/guardian: " + guardian : "") + ".";
+  sh.appendRow([
+    "New lead (waiver)", first, last, String(email || ""), "", notes,
+    when || new Date(), "Digital Waiver", program || "", ""
+  ]);
+  return "added to leads sheet (row " + sh.getLastRow() + ")";
+}
+
 function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, program, dateSigned, sigB64, visitLine) {
   var recorded = Utilities.formatDate(new Date(), "America/Denver", "MMMM d, yyyy h:mm a") + " Mountain Time";
   var sigImg = sigB64
