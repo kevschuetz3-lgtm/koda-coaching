@@ -264,6 +264,49 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Athlete Kits helpers (Iron Games kit builder) ──
+    // Kit picks live in an "Athlete Kits" tab of the Team Kits spreadsheet,
+    // whether they arrive with a full shirt submission or via the add-on link.
+    function ironGamesKitsSpreadsheet_() {
+      var props = PropertiesService.getScriptProperties();
+      var id = props.getProperty("IRON_KIT_SHEET_ID");
+      var ss = null;
+      if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
+      if (!ss) {
+        ss = SpreadsheetApp.create("Koda Iron Games Team Kits");
+        props.setProperty("IRON_KIT_SHEET_ID", ss.getId());
+      }
+      return ss;
+    }
+    function appendAthleteKits_(teamName, division, cap, kitsData, source) {
+      var ss = ironGamesKitsSpreadsheet_();
+      var sh = ss.getSheetByName("Athlete Kits");
+      if (!sh) {
+        sh = ss.insertSheet("Athlete Kits");
+        sh.getRange(1, 1, 1, 10).setValues([[
+          "Timestamp", "Team Name", "Division", "Captain", "Captain Email",
+          "Athlete 1 Kit", "Athlete 2 Kit", "Athlete 3 Kit", "Pack Colors", "Source"
+        ]]).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+        sh.setFrozenRows(1);
+      }
+      var specs = (kitsData && kitsData.specs) || [];
+      sh.appendRow([
+        new Date(), teamName || "", division || "", cap.name || "", cap.email || "",
+        specs[0] || "", specs[1] || "", specs[2] || "",
+        ((kitsData && kitsData.packColors) || []).join(","), source
+      ]);
+    }
+    function athleteKitsHtml_(kitsData) {
+      var specs = (kitsData && kitsData.specs) || [];
+      if (!specs.length) return "";
+      return '<p style="font-family:Arial,sans-serif;font-size:15px;margin:16px 0 4px"><b>Athlete Kits</b></p>' +
+        '<table cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+        specs.map(function (s, i) {
+          return '<tr><td style="border:1px solid #ddd;padding:7px;white-space:nowrap"><b>Athlete ' + (i + 1) + '</b></td>' +
+            '<td style="border:1px solid #ddd;padding:7px">' + s + '</td></tr>';
+        }).join('') + '</table>';
+    }
+
     // ── Receive a team apparel kit from the Iron Games kit builder ──
     // Logs to the "Koda Iron Games Team Kits" sheet (auto-created), emails the
     // print shop (kodacustomapparel@gmail.com) the full spec + mockup images,
@@ -294,6 +337,9 @@ function doPost(e) {
         d2.garment || "", d2.color || "", d2.print1 || "", d2.print2 || "", (d2.sizes || []).join(" / "),
         data.page || ""
       ]);
+      if (data.kits && data.kits.specs && data.kits.specs.length) {
+        appendAthleteKits_(data.teamName, data.division, cap, data.kits, "with shirts");
+      }
 
       var kitAttachments = [];
       (data.mockups || []).forEach(function (m) {
@@ -315,7 +361,8 @@ function doPost(e) {
         '<td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"><b>Vinyl colors</b></td>' +
         '<td style="border:1px solid #ddd;padding:8px;background:#f2f2f2"><b>Sizes</b></td></tr>' +
         kitDayHtml("Day 1", d1) + kitDayHtml("Day 2", d2) + '</table>' +
-        '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Print 1 = team name + "Koda Iron Games 26" + sleeve logo &nbsp;•&nbsp; Print 2 = VI mark/line + Colorado flag on upper back</p>';
+        '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Print 1 = team name + "Koda Iron Games 26" + sleeve logo &nbsp;•&nbsp; Print 2 = VI mark/line + Colorado flag on upper back</p>' +
+        athleteKitsHtml_(data.kits);
 
       MailApp.sendEmail({
         to: "kodacustomapparel@gmail.com",
@@ -394,6 +441,121 @@ function doPost(e) {
         } catch (ePiMail) { /* the answer is logged either way */ }
       }
 
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Volunteer signup from the Iron Games volunteer site ──
+    // Logs to the "Koda Iron Games Volunteers" sheet (auto-created), emails the
+    // volunteer a confirmation, and notifies Kevin.
+    if (data.action === "ironGamesVolunteer") {
+      var vProps = PropertiesService.getScriptProperties();
+      var vId = vProps.getProperty("IRON_VOLUNTEERS_SHEET_ID");
+      var vss = null;
+      if (vId) { try { vss = SpreadsheetApp.openById(vId); } catch (eV) { vss = null; } }
+      if (!vss) {
+        vss = SpreadsheetApp.create("Koda Iron Games Volunteers");
+        vss.getSheets()[0].setName("Volunteers")
+          .getRange(1, 1, 1, 13).setValues([[
+            "Timestamp", "Name", "Email", "Phone", "Shirt Size",
+            "All Weekend?", "Gift Choice", "Shifts",
+            "Volunteered IG Before?", "Judged Comp Before?", "Judging Comfort (1-10)",
+            "Roles", "Page"
+          ]]).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+        vss.getSheets()[0].setFrozenRows(1);
+        vProps.setProperty("IRON_VOLUNTEERS_SHEET_ID", vss.getId());
+      }
+      var vsh = vss.getSheetByName("Volunteers") || vss.getSheets()[0];
+      vsh.appendRow([
+        new Date(), data.name || "", data.email || "", data.phone || "", data.shirtSize || "",
+        data.allWeekend ? "YES" : "No", data.gift || "",
+        (data.shifts || []).join("\n"),
+        data.volunteeredBefore || "", data.judgedBefore || "", data.judgeComfort || "",
+        (data.roles || []).join("\n"),
+        data.page || ""
+      ]);
+
+      function volRow(l, v) {
+        return '<tr><td style="border:1px solid #ddd;padding:8px;font-weight:bold;white-space:nowrap">' + l + '</td>' +
+          '<td style="border:1px solid #ddd;padding:8px">' + v + '</td></tr>';
+      }
+      var volTable =
+        '<table cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">' +
+        volRow("Shirt size", data.shirtSize || "?") +
+        volRow("Shifts", data.allWeekend
+          ? '<b style="color:#b7791f">ALL WEEKEND</b><br>' + (data.shifts || []).join("<br>")
+          : (data.shifts || []).join("<br>")) +
+        (data.allWeekend && data.gift ? volRow("All-weekend gift", "<b>" + data.gift + "</b>") : "") +
+        volRow("Roles", (data.roles || []).join("<br>")) +
+        volRow("Volunteered at IG before", data.volunteeredBefore || "?") +
+        volRow("Judged a comp before", data.judgedBefore || "?") +
+        volRow("Judging comfort", (data.judgeComfort || "?") + " / 10") +
+        '</table>';
+
+      if (data.email) {
+        try {
+          MailApp.sendEmail({
+            to: data.email,
+            replyTo: "kodaironview@gmail.com",
+            subject: "You're on the crew — Koda Iron Games 2026",
+            htmlBody:
+              '<p style="font-family:Arial,sans-serif">Hey ' + (data.name || "there") + ',</p>' +
+              '<p style="font-family:Arial,sans-serif">Thanks for signing up to volunteer at the <b>Koda Iron Games</b>, October 3–4 at Koda CrossFit Iron View! Here\'s what you signed up for:</p>' +
+              volTable +
+              '<p style="font-family:Arial,sans-serif">We\'ll follow up with your shift schedule and all the details as the Games get closer. Need to change anything? Just reply to this email.</p>' +
+              '<p style="font-family:Arial,sans-serif">See you on the floor,<br>Kevin Schuetz<br>Koda Iron Games • Presented by WODprep</p>'
+          });
+        } catch (eVMail) { /* signup is already in the sheet — keep going */ }
+      }
+
+      MailApp.sendEmail({
+        to: "kevschuetz3@gmail.com",
+        subject: "🙋 New Iron Games volunteer: " + (data.name || "?") +
+          (data.allWeekend ? " (ALL WEEKEND)" : " (" + (data.shifts || []).length + " shift" + ((data.shifts || []).length === 1 ? "" : "s") + ")"),
+        htmlBody:
+          '<p style="font-family:Arial,sans-serif"><b>' + (data.name || "?") + '</b> just signed up to volunteer.</p>' +
+          '<p style="font-family:Arial,sans-serif"><a href="mailto:' + (data.email || "") + '">' + (data.email || "") + '</a>' +
+          (data.phone ? ' · ' + data.phone : '') + '</p>' +
+          volTable +
+          '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Logged in the "Koda Iron Games Volunteers" sheet.</p>'
+      });
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Athlete Kits ADD-ON (existing teams adding kits after the fact) ──
+    // Writes ONLY to the "Athlete Kits" tab — original shirt rows are untouched.
+    if (data.action === "ironGamesKitAddon") {
+      var aCap = data.captain || {};
+      appendAthleteKits_(data.teamName, data.division, aCap, data.kits, "add-on");
+      var aHtml = athleteKitsHtml_(data.kits);
+      MailApp.sendEmail({
+        to: "kodacustomapparel@gmail.com",
+        replyTo: aCap.email || "kodaironview@gmail.com",
+        subject: "🎒 Athlete Kits added: " + (data.teamName || "?") + " (" + (data.division || "?") + ")",
+        htmlBody:
+          '<p style="font-family:Arial,sans-serif"><b>' + (data.teamName || "?") + '</b> — ' + (data.division || "?") +
+          ' — added their Athlete Kits (shirts were ordered earlier; this is kits only).</p>' +
+          '<p style="font-family:Arial,sans-serif">Captain: ' + (aCap.name || "?") + ' · <a href="mailto:' + (aCap.email || "") + '">' + (aCap.email || "") + '</a></p>' +
+          aHtml +
+          '<p style="font-family:Arial,sans-serif;font-size:13px;color:#555">Logged in the "Athlete Kits" tab of the Team Kits sheet.</p>'
+      });
+      if (aCap.email) {
+        try {
+          MailApp.sendEmail({
+            to: aCap.email,
+            replyTo: "kodacustomapparel@gmail.com",
+            subject: "Your Koda Iron Games 26 Athlete Kits are locked in — " + (data.teamName || ""),
+            htmlBody:
+              '<p style="font-family:Arial,sans-serif">Hey ' + (aCap.name || "captain") + ',</p>' +
+              '<p style="font-family:Arial,sans-serif">Your team’s Athlete Kit picks for <b>' + (data.teamName || "your team") + '</b> are in. Your shirt order from earlier is unchanged.</p>' +
+              aHtml +
+              '<p style="font-family:Arial,sans-serif">Need a change? Email <a href="mailto:kodacustomapparel@gmail.com">kodacustomapparel@gmail.com</a> by <b>September 18</b>.</p>' +
+              '<p style="font-family:Arial,sans-serif">See you on the floor,<br>Koda Iron Games • Presented by WODprep</p>'
+          });
+        } catch (eAddonMail) { /* logged either way */ }
+      }
       return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
         .setMimeType(ContentService.MimeType.JSON);
     }
@@ -557,6 +719,71 @@ function doPost(e) {
       props.setProperty("SPONSOR_MENU_SHEET_ID", ssN.getId());
       return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: ssN.getUrl(), id: ssN.getId() }))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Write the Iron Games kit-status report spreadsheet ──
+    // payload: { action:"writeIronGamesKitStatus", title, folderName,
+    //   tabs:[{ name, note, headers:[...], rows:[[...]], widths:[...],
+    //           rowColors:[null|"#hex", ...] }] }
+    // First run creates the file in the named Drive folder (id kept in prop
+    // IRON_KIT_STATUS_SHEET_ID); later runs rewrite it in place so the URL
+    // stays stable. The sheet is auto-generated — a rewrite clobbers hand edits.
+    if (data.action === "writeIronGamesKitStatus") {
+      var ksProps = PropertiesService.getScriptProperties();
+      var ksId = ksProps.getProperty("IRON_KIT_STATUS_SHEET_ID");
+      var ksSs = null;
+      if (ksId) { try { ksSs = SpreadsheetApp.openById(ksId); } catch (eKsOpen) { ksSs = null; } }
+      var ksCreated = false;
+      var ksFolderNote = "";
+      if (!ksSs) {
+        ksSs = SpreadsheetApp.create(data.title || "Iron Games 2026 Kit Status");
+        ksProps.setProperty("IRON_KIT_STATUS_SHEET_ID", ksSs.getId());
+        ksCreated = true;
+        try {
+          var ksFolders = DriveApp.getFoldersByName(data.folderName || "Iron Games");
+          if (ksFolders.hasNext()) {
+            var ksFolder = ksFolders.next();
+            DriveApp.getFileById(ksSs.getId()).moveTo(ksFolder);
+            ksFolderNote = 'moved to folder "' + ksFolder.getName() + '"';
+          } else {
+            ksFolderNote = 'folder "' + (data.folderName || "Iron Games") + '" not found — left in My Drive root';
+          }
+        } catch (eKsMove) { ksFolderNote = "move failed: " + String(eKsMove); }
+      }
+      var ksTabs = data.tabs || [];
+      var ksTmp = ksSs.insertSheet("__rebuild__");
+      ksSs.getSheets().forEach(function (s) {
+        if (s.getSheetId() !== ksTmp.getSheetId()) ksSs.deleteSheet(s);
+      });
+      for (var ksTi = 0; ksTi < ksTabs.length; ksTi++) {
+        var ksSpec = ksTabs[ksTi];
+        var ksSh = ksSs.insertSheet(ksSpec.name, ksTi);
+        var ksCols = ksSpec.headers.length;
+        var ksHeaderRow = 1;
+        if (ksSpec.note) {
+          ksSh.getRange(1, 1).setValue(ksSpec.note);
+          ksSh.getRange(1, 1, 1, ksCols).merge().setFontStyle("italic").setWrap(true)
+            .setBackground("#fff9e6").setFontSize(9).setVerticalAlignment("middle");
+          ksSh.setRowHeight(1, 42);
+          ksHeaderRow = 2;
+        }
+        ksSh.getRange(ksHeaderRow, 1, 1, ksCols).setValues([ksSpec.headers])
+          .setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff").setWrap(true);
+        if (ksSpec.rows && ksSpec.rows.length) {
+          ksSh.getRange(ksHeaderRow + 1, 1, ksSpec.rows.length, ksCols).setValues(ksSpec.rows)
+            .setWrap(true).setVerticalAlignment("middle");
+          (ksSpec.rowColors || []).forEach(function (hex, ri) {
+            if (hex) ksSh.getRange(ksHeaderRow + 1 + ri, 1, 1, ksCols).setBackground(hex);
+          });
+        }
+        (ksSpec.widths || []).forEach(function (w, ci) { if (w) ksSh.setColumnWidth(ci + 1, w); });
+        ksSh.setFrozenRows(ksHeaderRow);
+      }
+      ksSs.deleteSheet(ksTmp);
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "ok", url: ksSs.getUrl(), id: ksSs.getId(), created: ksCreated, folderNote: ksFolderNote,
+        tabs: ksTabs.map(function (t) { return t.name + ":" + (t.rows || []).length; })
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ── Generate availability tabs ──
@@ -983,6 +1210,61 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ── Athlete-kit pack-color tallies (drives sold-out logic on the site) ──
+  if (action === "ironGamesKitCounts") {
+    var kcId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    var kcCounts = {};
+    if (kcId) {
+      try {
+        var kcSh = SpreadsheetApp.openById(kcId).getSheetByName("Athlete Kits");
+        if (kcSh && kcSh.getLastRow() > 1) {
+          var kcVals = kcSh.getRange(2, 2, kcSh.getLastRow() - 1, 8).getValues(); // Team..Pack Colors
+          kcVals.forEach(function (r) {
+            if (/test/i.test(String(r[0] || ""))) return; // skip TEST teams
+            String(r[7] || "").split(",").forEach(function (c) {
+              c = c.trim();
+              if (c) kcCounts[c] = (kcCounts[c] || 0) + 1;
+            });
+          });
+        }
+      } catch (eKc) {}
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", counts: kcCounts }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Team list for the kit add-on picker (deduped latest-first submissions) ──
+  if (action === "ironGamesTeams") {
+    var tlId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    var tlOut = [];
+    if (tlId) {
+      try {
+        var tlSs = SpreadsheetApp.openById(tlId);
+        var tlSh = tlSs.getSheetByName("Kits") || tlSs.getSheets()[0];
+        var tlVals = tlSh.getDataRange().getValues();
+        var seen = {};
+        var kitsDone = {};
+        var akSh = tlSs.getSheetByName("Athlete Kits");
+        if (akSh && akSh.getLastRow() > 1) {
+          akSh.getRange(2, 2, akSh.getLastRow() - 1, 2).getValues().forEach(function (r) {
+            kitsDone[String(r[0]) + "§" + String(r[1])] = true;
+          });
+        }
+        for (var ti = 1; ti < tlVals.length; ti++) {
+          var tTeam = String(tlVals[ti][2] || "");
+          var tDiv = String(tlVals[ti][1] || "");
+          if (!tTeam || /test/i.test(tTeam)) continue;
+          var tKey = tTeam + "§" + tDiv;
+          if (seen[tKey]) continue;
+          seen[tKey] = true;
+          tlOut.push({ team: tTeam, division: tDiv, hasKits: !!kitsDone[tKey] });
+        }
+      } catch (eTl) {}
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", teams: tlOut }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // ── Team kits sheet info (created on first kit submission) ──
   if (action === "ironGamesKitsInfo") {
     var kitsId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
@@ -993,6 +1275,56 @@ function doGet(e) {
     var kitsSs = SpreadsheetApp.openById(kitsId);
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: kitsSs.getUrl(), id: kitsId }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Raw kit rows (feeds the kit-status cross-reference) ──
+  if (action === "ironGamesKitRows") {
+    var krId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    var krOut = { status: "ok", kits: [], athleteKits: [] };
+    if (krId) {
+      try {
+        var krSs = SpreadsheetApp.openById(krId);
+        var krSh = krSs.getSheetByName("Kits") || krSs.getSheets()[0];
+        var krVals = krSh.getDataRange().getValues();
+        for (var kri = 1; kri < krVals.length; kri++) {
+          krOut.kits.push({
+            ts: krVals[kri][0] ? Utilities.formatDate(new Date(krVals[kri][0]), "America/Denver", "yyyy-MM-dd") : "",
+            division: String(krVals[kri][1] || ""),
+            team: String(krVals[kri][2] || ""),
+            captain: String(krVals[kri][3] || ""),
+            email: String(krVals[kri][4] || "")
+          });
+        }
+        var krAk = krSs.getSheetByName("Athlete Kits");
+        if (krAk && krAk.getLastRow() > 1) {
+          var krAkVals = krAk.getDataRange().getValues();
+          for (var krAi = 1; krAi < krAkVals.length; krAi++) {
+            krOut.athleteKits.push({
+              ts: krAkVals[krAi][0] ? Utilities.formatDate(new Date(krAkVals[krAi][0]), "America/Denver", "yyyy-MM-dd") : "",
+              team: String(krAkVals[krAi][1] || ""),
+              division: String(krAkVals[krAi][2] || "")
+            });
+          }
+        }
+      } catch (eKr) { krOut.status = "error"; krOut.message = String(eKr); }
+    }
+    return ContentService.createTextOutput(JSON.stringify(krOut))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Volunteers sheet info (created on first volunteer signup) ──
+  if (action === "ironGamesVolunteersInfo") {
+    var volId = PropertiesService.getScriptProperties().getProperty("IRON_VOLUNTEERS_SHEET_ID");
+    if (!volId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var volSs = SpreadsheetApp.openById(volId);
+    var volSheet = volSs.getSheetByName("Volunteers") || volSs.getSheets()[0];
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok", url: volSs.getUrl(), id: volId,
+      count: Math.max(0, volSheet.getLastRow() - 1)
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   // ── Waivers sheet/folder info (created on first waiver submission) ──
