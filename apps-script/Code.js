@@ -759,6 +759,28 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Move waiver-created lead rows to the top of the leads sheet ──
+    // (for rows added by appendWaiverLead_ back when it appended at the bottom;
+    // matches on the Stage value "New lead (waiver)", re-inserts newest-first)
+    if (data.action === "relocateWaiverLeads") {
+      var rlSs = SpreadsheetApp.openById(WAIVER_LEADS_SHEET_ID);
+      var rlSh = null;
+      rlSs.getSheets().forEach(function (s) { if (s.getSheetId() === 0) rlSh = s; });
+      rlSh = rlSh || rlSs.getSheets()[0];
+      var rlVals = rlSh.getDataRange().getValues();
+      var rlRows = [];
+      for (var ri = 1; ri < rlVals.length; ri++) {
+        if (String(rlVals[ri][0]) === "New lead (waiver)") rlRows.push({ idx: ri + 1, vals: rlVals[ri] });
+      }
+      rlRows.slice().reverse().forEach(function (r) { rlSh.deleteRow(r.idx); }); // bottom-up so indices hold
+      rlRows.sort(function (a, b) { return new Date(a.vals[6]) - new Date(b.vals[6]); }); // oldest first…
+      rlRows.forEach(function (r) { insertLeadRowTop_(rlSh, r.vals); }); // …so newest ends up at row 2
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "ok", moved: rlRows.length,
+        names: rlRows.map(function (r) { return r.vals[1] + " " + r.vals[2]; })
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Create the Iron Games sponsor menu spreadsheet (data-driven) ──
     // payload: { action:"writeSponsorMenu", title, force,
     //   tabs:[{ name, note, headers:[...], rows:[[...]], widths:[...],
@@ -1453,6 +1475,8 @@ function doGet(e) {
       tab: liSh.getName(), rows: Math.max(0, liLast - 1), cols: liCols,
       tabs: liSs.getSheets().map(function (s) { return s.getName() + " (gid " + s.getSheetId() + ", " + s.getLastRow() + "r)"; }),
       headers: liCols ? liSh.getRange(1, 1, 1, liCols).getValues()[0] : [],
+      firstRows: liLast > 1 ? liSh.getRange(2, 1, Math.min(3, liLast - 1), liCols).getValues()
+        .map(function (r) { return r.map(mask_); }) : [],
       lastRows: liLast > 1 ? liSh.getRange(Math.max(2, liLast - 1), 1, Math.min(2, liLast - 1), liCols).getValues()
         .map(function (r) { return r.map(mask_); }) : []
     };
@@ -1901,10 +1925,18 @@ function escHtml_(s) {
 
 // Renders the signed waiver as print-ready HTML (converted to PDF by the caller).
 // Mirrors the paper "Koda CrossFit Iron View Digital Waiver" text verbatim.
-// Append a local trial-class waiver signer to Kevin's membership-leads sheet
-// (gid 0 = "2025 Master List"). Dedupes by email; returns a short note for the
-// notification email. Columns: Stage, First, Last, Email, Phone, Notes,
-// Interaction Owner/Date, Contact Method, Track Interest, Column 1.
+// Insert a lead row at the TOP of the leads list (row 2) so the newest lead is
+// visible without scrolling past 500+ historical rows; clears the formatting
+// the new row inherits from the header.
+function insertLeadRowTop_(sh, rowVals) {
+  sh.insertRowsBefore(2, 1);
+  sh.getRange(2, 1, 1, rowVals.length).clearFormat().setValues([rowVals]);
+}
+
+// Add a local trial-class waiver signer to Kevin's membership-leads sheet
+// (gid 0 = "2025 Master List"), newest at top. Dedupes by email; returns a
+// short note for the notification email. Columns: Stage, First, Last, Email,
+// Phone, Notes, Interaction Owner/Date, Contact Method, Track Interest, Column 1.
 function appendWaiverLead_(athlete, email, program, referred, isMinor, guardian, when) {
   var ss = SpreadsheetApp.openById(WAIVER_LEADS_SHEET_ID);
   var sh = null;
@@ -1925,11 +1957,11 @@ function appendWaiverLead_(athlete, email, program, referred, isMinor, guardian,
   var notes = "Signed digital waiver" + (program ? " — interested in " + program : "") +
     (referred ? ". Referred by: " + referred : "") +
     (isMinor && guardian ? ". Under 18 — parent/guardian: " + guardian : "") + ".";
-  sh.appendRow([
+  insertLeadRowTop_(sh, [
     "New lead (waiver)", first, last, String(email || ""), "", notes,
     when || new Date(), "Digital Waiver", program || "", ""
   ]);
-  return "added to leads sheet (row " + sh.getLastRow() + ")";
+  return "added to top of leads sheet";
 }
 
 function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, program, dateSigned, sigB64, visitLine) {
