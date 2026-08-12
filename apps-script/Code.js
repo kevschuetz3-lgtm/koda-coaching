@@ -574,9 +574,10 @@ function doPost(e) {
       if (!wss) {
         wss = SpreadsheetApp.create("Koda CrossFit Iron View Waivers");
         wss.getSheets()[0].setName("Waivers")
-          .getRange(1, 1, 1, 10).setValues([[
+          .getRange(1, 1, 1, 14).setValues([[
             "Timestamp", "Athlete Name", "Under 18", "Parent/Guardian", "Email",
-            "Referred By", "Program", "Date Signed", "Signed PDF", "Device"
+            "Referred By", "Program", "Visit Type", "From", "Duration", "Payment",
+            "Date Signed", "Signed PDF", "Device"
           ]]).setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
         wss.getSheets()[0].setFrozenRows(1);
         wProps.setProperty("WAIVER_SHEET_ID", wss.getId());
@@ -591,6 +592,18 @@ function doPost(e) {
           .setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
       }
 
+      // Sheets created before the out-of-town drop-in columns existed (2026-08-12):
+      // insert each missing one after "Program", chaining so order is preserved
+      var wVisitCols = ["Visit Type", "From", "Duration", "Payment"];
+      for (var wvc = 0; wvc < wVisitCols.length; wvc++) {
+        wHead = wSheet.getRange(1, 1, 1, wSheet.getLastColumn()).getValues()[0];
+        if (wHead.indexOf(wVisitCols[wvc]) !== -1) continue;
+        var wAfter = wHead.indexOf(wvc === 0 ? "Program" : wVisitCols[wvc - 1]) + 1; // 1-based col to insert after
+        wSheet.insertColumnAfter(wAfter);
+        wSheet.getRange(1, wAfter + 1).setValue(wVisitCols[wvc])
+          .setFontWeight("bold").setBackground("#1a1a2e").setFontColor("#ffffff");
+      }
+
       var athlete = String(data.athleteName || "").trim();
       var guardian = String(data.guardianName || "").trim();
       var wMinor = !!data.isMinor;
@@ -599,10 +612,21 @@ function doPost(e) {
       var wProgram = String(data.program || "").trim();
       var wDate = String(data.dateSigned || Utilities.formatDate(new Date(), "America/Denver", "yyyy-MM-dd"));
 
+      // Out-of-town drop-in flow (frontend 2026-08-12); locals arrive as "Local Trial Class"
+      var wVisitType = String(data.visitType || "").trim();
+      var wVisitFrom = String(data.visitFrom || "").trim();
+      var wVisitDur = String(data.visitDuration || "").trim();
+      var wVisitPay = String(data.visitPayment || "").trim();
+      var wIsDropin = /drop-?in/i.test(wVisitType);
+      var wVisitLine = wVisitType;
+      if (wVisitFrom) wVisitLine += " — from " + wVisitFrom;
+      if (wVisitDur) wVisitLine += " — " + wVisitDur;
+      if (wVisitPay) wVisitLine += " — paying by " + wVisitPay;
+
       var pdfBlob = null, pdfUrl = "", pdfNote = "";
       try {
         var wHtml = buildWaiverPdfHtml_(athlete, wMinor, guardian, wEmail, wReferred, wProgram, wDate,
-          String(data.signaturePng || ""));
+          String(data.signaturePng || ""), wVisitLine);
         pdfBlob = Utilities.newBlob(wHtml, "text/html", "waiver.html")
           .getAs("application/pdf")
           .setName("Koda Waiver - " + (athlete || "Unknown") + " - " + wDate + ".pdf");
@@ -624,7 +648,8 @@ function doPost(e) {
       }
 
       wSheet.appendRow([
-        new Date(), athlete, wMinor ? "Yes" : "", guardian, wEmail, wReferred, wProgram, wDate,
+        new Date(), athlete, wMinor ? "Yes" : "", guardian, wEmail, wReferred, wProgram,
+        wVisitType, wVisitFrom, wVisitDur, wVisitPay, wDate,
         pdfUrl || pdfNote, String(data.userAgent || "").slice(0, 250)
       ]);
 
@@ -634,12 +659,17 @@ function doPost(e) {
       try {
         MailApp.sendEmail({
           to: wNotifyTo,
-          subject: "📝 Waiver signed: " + athlete + (wProgram ? " — " + wProgram : "") + (wMinor ? " (minor)" : ""),
+          subject: "📝 Waiver signed: " + athlete + (wProgram ? " — " + wProgram : "") +
+            (wIsDropin ? " — Out-of-town drop-in" : "") + (wMinor ? " (minor)" : ""),
           htmlBody:
             '<p style="font-family:Arial,sans-serif"><b>' + escHtml_(athlete) + '</b> just signed the Koda CrossFit Iron View waiver.' +
             (wMinor ? '<br>Signed by parent/guardian: <b>' + escHtml_(guardian) + '</b>' : '') + '</p>' +
             '<p style="font-family:Arial,sans-serif">Email: <a href="mailto:' + escHtml_(wEmail) + '">' + escHtml_(wEmail) + '</a>' +
             (wProgram ? '<br>Program: <b>' + escHtml_(wProgram) + '</b>' : '') +
+            (wVisitType ? '<br>Visit type: <b>' + escHtml_(wVisitType) + '</b>' : '') +
+            (wVisitFrom ? '<br>From: <b>' + escHtml_(wVisitFrom) + '</b>' : '') +
+            (wVisitDur ? '<br>Stay: <b>' + escHtml_(wVisitDur) + '</b>' : '') +
+            (wVisitPay ? '<br>Paying by: <b>' + escHtml_(wVisitPay) + '</b>' : '') +
             (wReferred ? '<br>Referred by: ' + escHtml_(wReferred) : '') +
             (pdfUrl ? '<br><a href="' + pdfUrl + '">Signed PDF in Drive</a>' : (pdfNote ? '<br>' + escHtml_(pdfNote) : '')) + '</p>' +
             '<p style="font-family:Arial,sans-serif;color:#777">Logged in the "Koda CrossFit Iron View Waivers" sheet. Signed copy attached.</p>',
@@ -648,6 +678,25 @@ function doPost(e) {
       } catch (eN1) { /* sheet row is already in — keep going */ }
 
       if (wEmail) {
+        // Drop-ins get a payment reminder matching what they picked on the site
+        var wZen25 = "https://kodaironview.sites.zenplanner.com/retail-product.cfm?ProductId=2EE6B68B-42BF-4654-94B0-C14CA4DBB32A";
+        var wZen60 = "https://kodaironview.sites.zenplanner.com/retail-product.cfm?ProductId=1237FCA9-4A10-4179-A06B-F8711918B83A";
+        var wPayPara = "";
+        if (wIsDropin) {
+          var wPrice = /\$60/.test(wVisitDur) ? "$60" : "$25";
+          if (/longer/i.test(wVisitDur)) {
+            wPayPara = "Since you&#8217;re in town for more than a week, chat with us at the front desk and we&#8217;ll set you up with the membership option that fits your stay.";
+          } else if (/credit card/i.test(wVisitPay)) {
+            var wZenUrl = /\$60/.test(wVisitDur) ? wZen60 : wZen25;
+            wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): if you haven&#8217;t already, you can pay your ' + wPrice +
+              ' securely here: <a href="' + wZenUrl + '">' + wZenUrl + '</a>';
+          } else if (/venmo|zelle/i.test(wVisitPay)) {
+            wPayPara = 'Drop-in payment (' + escHtml_(wVisitDur) + '): ' + wPrice + ' via ' + escHtml_(wVisitPay) +
+              ' &mdash; we&#8217;ll get you the details at the front desk if you don&#8217;t have them yet.';
+          } else if (/apparel/i.test(wVisitPay)) {
+            wPayPara = "Drop-in payment: pick out $25 of Koda apparel at the front desk and your visit is covered.";
+          }
+        }
         try {
           MailApp.sendEmail({
             to: wEmail,
@@ -658,6 +707,7 @@ function doPost(e) {
               '<p style="font-family:Arial,sans-serif">Thanks for completing the Koda CrossFit Iron View waiver' +
               (wMinor ? ' on behalf of ' + escHtml_(athlete) : '') +
               '. A copy of the signed waiver is attached for your records.</p>' +
+              (wPayPara ? '<p style="font-family:Arial,sans-serif">' + wPayPara + '</p>' : '') +
               '<p style="font-family:Arial,sans-serif">See you at the gym!<br>— Koda CrossFit Iron View</p>',
             attachments: pdfBlob ? [pdfBlob] : []
           });
@@ -1775,7 +1825,7 @@ function escHtml_(s) {
 
 // Renders the signed waiver as print-ready HTML (converted to PDF by the caller).
 // Mirrors the paper "Koda CrossFit Iron View Digital Waiver" text verbatim.
-function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, program, dateSigned, sigB64) {
+function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, program, dateSigned, sigB64, visitLine) {
   var recorded = Utilities.formatDate(new Date(), "America/Denver", "MMMM d, yyyy h:mm a") + " Mountain Time";
   var sigImg = sigB64
     ? '<img src="data:image/png;base64,' + sigB64 + '" style="height:58px" alt="signature">'
@@ -1829,6 +1879,10 @@ function buildWaiverPdfHtml_(athlete, isMinor, guardian, email, referredBy, prog
     (program
       ? '<tr><td style="padding-top:10px">' + escHtml_(program) + '</td><td></td><td></td><td></td><td></td></tr>' +
         '<tr><td class="sigline">Class Program</td><td></td><td></td><td></td><td></td></tr>'
+      : '') +
+    (visitLine
+      ? '<tr><td style="padding-top:10px" colspan="5">' + escHtml_(visitLine) + '</td></tr>' +
+        '<tr><td class="sigline" colspan="5">Visit Type</td></tr>'
       : '') +
     '</table>' +
     '<p class="meta">Executed electronically via the Koda CrossFit Iron View digital waiver page &middot; Recorded ' + recorded + '</p>' +
