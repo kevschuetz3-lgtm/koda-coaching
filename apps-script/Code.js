@@ -527,6 +527,29 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Save files to a Drive folder (used for team print-file delivery) ──
+    if (data.action === "saveToDrive") {
+      var sdOut = [];
+      var sdFolder;
+      try {
+        sdFolder = DriveApp.getFolderById(data.folderId);
+      } catch (eSd) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Folder not accessible to the script account: " + eSd }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      (data.files || []).forEach(function (f) {
+        try {
+          var blob = Utilities.newBlob(Utilities.base64Decode(f.b64), f.mimeType || "image/png", f.name);
+          var file = sdFolder.createFile(blob);
+          sdOut.push({ name: f.name, ok: true, url: file.getUrl() });
+        } catch (eF2) {
+          sdOut.push({ name: f.name, ok: false, err: String(eF2) });
+        }
+      });
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", folder: sdFolder.getName(), files: sdOut }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Athlete Kits ADD-ON (existing teams adding kits after the fact) ──
     // Writes ONLY to the "Athlete Kits" tab — original shirt rows are untouched.
     if (data.action === "ironGamesKitAddon") {
@@ -931,6 +954,93 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ── Log which teams' print graphics have been generated (upserts "Print Files" tab) ──
+    // payload: { action:"ironGamesPrintLog", entries:[{team, files, generated}] }
+    // Col D "Ordered?" is Kevin's manual mark — preserved across upserts.
+    if (data.action === "ironGamesPrintLog") {
+      var plId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+      var plSs = SpreadsheetApp.openById(plId);
+      var plSh = plSs.getSheetByName("Print Files");
+      if (!plSh) {
+        plSh = plSs.insertSheet("Print Files");
+        plSh.getRange(1, 1, 1, 4).setValues([["Team", "Print Files", "Last Generated", "Ordered?"]]).setFontWeight("bold");
+        plSh.setColumnWidth(1, 220); plSh.setColumnWidth(2, 520); plSh.setColumnWidth(3, 150);
+      }
+      var plMap = {};
+      if (plSh.getLastRow() > 1) {
+        plSh.getRange(2, 1, plSh.getLastRow() - 1, 4).getValues().forEach(function (r) {
+          if (String(r[0])) plMap[String(r[0])] = { files: r[1], generated: r[2], ordered: r[3] };
+        });
+      }
+      (data.entries || []).forEach(function (en) {
+        var plOld = plMap[en.team] || {};
+        plMap[en.team] = { files: en.files, generated: en.generated, ordered: plOld.ordered || "" };
+      });
+      var plTeams = Object.keys(plMap).sort();
+      var plRows = plTeams.map(function (t) {
+        return [t, plMap[t].files, plMap[t].generated, plMap[t].ordered || ""];
+      });
+      if (plSh.getLastRow() > 1) plSh.getRange(2, 1, plSh.getLastRow() - 1, 4).clearContent();
+      if (plRows.length) plSh.getRange(2, 1, plRows.length, 4).setValues(plRows);
+      return ContentService.createTextOutput(JSON.stringify({ status: "ok", teams: plRows.length }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Split volunteer rows out of the Iron Games master list into their own tab ──
+    if (data.action === "splitVolunteers") {
+      var svSs = SpreadsheetApp.openById(data.ssId);
+      var svMain = null;
+      if (data.gid !== undefined && data.gid !== null && data.gid !== "") {
+        var svGid = Number(data.gid);
+        var svAll = svSs.getSheets();
+        for (var sv = 0; sv < svAll.length; sv++) {
+          if (svAll[sv].getSheetId() === svGid) { svMain = svAll[sv]; break; }
+        }
+      }
+      if (!svMain) svMain = svSs.getSheets()[0];
+      var svRows = data.rows || []; // [{r, first, email}]
+      var svTabName = data.tabName || "Volunteers";
+      if (!svRows.length) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "no rows given" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // read the whole data block once, verify every target row still matches
+      var svLastRow = svMain.getLastRow();
+      var svData = svMain.getRange(1, 1, svLastRow, 7).getValues();
+      var svMismatch = [];
+      svRows.forEach(function(x) {
+        var rowVals = svData[x.r - 1] || [];
+        var f = String(rowVals[1] || "").trim();
+        var em = String(rowVals[3] || "").trim();
+        if (f !== x.first || em !== x.email) {
+          svMismatch.push({ r: x.r, expected: x.first + " | " + x.email, found: f + " | " + em });
+        }
+      });
+      if (svMismatch.length) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error", message: "row verification failed — sheet changed since export; aborted, nothing modified",
+          mismatches: svMismatch
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      // collect the rows' values (7 cols)
+      var svMoved = svRows.map(function(x) { return svData[x.r - 1].slice(0, 7); });
+      // create or clear the Volunteers tab
+      var svVol = svSs.getSheetByName(svTabName);
+      if (!svVol) svVol = svSs.insertSheet(svTabName);
+      else svVol.clearContents();
+      var svHeader = ["Most Recent Year", "First Name", "Last Name", "E-mail", "All Years Competed", "Signed Up 2026", "Notes"];
+      svVol.getRange(1, 1, 1, 7).setValues([svHeader]).setFontWeight("bold");
+      svVol.getRange(2, 1, svMoved.length, 7).setValues(svMoved);
+      svVol.setFrozenRows(1);
+      // delete from the main sheet bottom-up so row indices stay valid; formatting shifts with rows
+      var svSorted = svRows.map(function(x) { return x.r; }).sort(function(a, b) { return b - a; });
+      svSorted.forEach(function(r) { svMain.deleteRow(r); });
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "ok", mainSheet: svMain.getName(), deleted: svSorted.length,
+        volunteersWritten: svMoved.length, volTab: svTabName, mainLastRow: svMain.getLastRow()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ── Write schedule to Google Sheets ──
     if (data.action === "writeScheduleToSheet") {
       var weekOf = data.weekOf || "";
@@ -1323,6 +1433,180 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ── Rebuild the "BP Tally" tab in the Team Kits sheet ──
+  // Born Primitive bras+shorts by style×size, from Athlete Kits (latest row
+  // per team) + Volunteers all-weekend gift picks. TEST rows excluded.
+  // Call any time to refresh before placing the BP order.
+  if (action === "ironGamesBPTally") {
+    var bpKitId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    var bpVolId = PropertiesService.getScriptProperties().getProperty("IRON_VOLUNTEERS_SHEET_ID");
+    if (!bpKitId) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "missing" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var BP_SIZES = ["XS", "S", "M", "L", "XL"];
+    var BP_SIZE_OK = { XS: 1, S: 1, M: 1, L: 1, XL: 1, XXL: 1 };
+    var BP_NAMES = {
+      "Vitality": "Vitality Sports Bra 3.0", "Helix": "Helix Sports Bra", "Serenity": "Serenity Sports Bra",
+      "New Heights": "New Heights Short", "Endurance": "Endurance Short", "Synergy": "Synergy Short 2.0"
+    };
+    var BP_COLORS = {
+      "Vitality": "Black", "Helix": "Navy", "Serenity": "Black",
+      "New Heights": "Navy", "Endurance": "Navy", "Synergy": "Black"
+    };
+    function bpPart(txt, styles) {
+      var style = null;
+      for (var bi = 0; bi < styles.length; bi++) {
+        if (txt.toLowerCase().indexOf(styles[bi].toLowerCase()) !== -1) { style = styles[bi]; break; }
+      }
+      var size = null;
+      var sm = txt.match(/size\s+([A-Za-z]{1,3})/i);
+      if (sm && BP_SIZE_OK[sm[1].toUpperCase()]) size = sm[1].toUpperCase();
+      if (!size) {
+        var pars = txt.match(/\(([A-Za-z]{1,3})\)/g) || [];
+        for (var bj = 0; bj < pars.length; bj++) {
+          var pt = pars[bj].replace(/[()]/g, "").toUpperCase();
+          if (BP_SIZE_OK[pt]) { size = pt; break; }
+        }
+      }
+      return { style: style, size: size || "?" };
+    }
+    function bpParse(s) {
+      s = String(s || "");
+      if (!/born primitive/i.test(s)) return null;
+      var hv = s.split("+");
+      if (hv.length < 2) return null;
+      return {
+        bra: bpPart(hv[0], ["Vitality", "Helix", "Serenity"]),
+        sh: bpPart(hv.slice(1).join("+"), ["New Heights", "Endurance", "Synergy"])
+      };
+    }
+    var bpEntries = [];   // {who, name, div, bra:{style,size}, sh:{style,size}, vol:bool}
+    var bpSs = SpreadsheetApp.openById(bpKitId);
+    var bpAk = bpSs.getSheetByName("Athlete Kits");
+    var bpTeamCount = 0;
+    if (bpAk && bpAk.getLastRow() > 1) {
+      var bpVals = bpAk.getDataRange().getValues();
+      var bpByTeam = {}, bpOrder = [];
+      for (var br = 1; br < bpVals.length; br++) {
+        var bTeam = String(bpVals[br][1] || "").trim();
+        if (!bTeam || /test/i.test(bTeam)) continue;
+        var bKey = bTeam.toUpperCase();
+        if (!(bKey in bpByTeam)) bpOrder.push(bKey);
+        bpByTeam[bKey] = bpVals[br];   // later row wins
+      }
+      bpTeamCount = bpOrder.length;
+      bpOrder.forEach(function (bk) {
+        var brow = bpByTeam[bk];
+        [5, 6, 7].forEach(function (ci, slot) {
+          var bp = bpParse(brow[ci]);
+          if (bp) bpEntries.push({ who: "Athlete " + (slot + 1), name: String(brow[1]), div: String(brow[2] || ""), bra: bp.bra, sh: bp.sh, vol: false });
+        });
+      });
+    }
+    var bpVolCount = 0;
+    if (bpVolId) {
+      try {
+        var bpVs = SpreadsheetApp.openById(bpVolId);
+        var bpVsh = bpVs.getSheetByName("Volunteers") || bpVs.getSheets()[0];
+        var bpVv = bpVsh.getDataRange().getValues();
+        var bpVh = bpVv[0], bpNi = -1, bpGi = -1;
+        for (var vh = 0; vh < bpVh.length; vh++) {
+          var hL = String(bpVh[vh]).toLowerCase();
+          if (bpNi < 0 && hL.indexOf("name") !== -1) bpNi = vh;
+          if (bpGi < 0 && hL.indexOf("gift") !== -1) bpGi = vh;
+        }
+        for (var vr2 = 1; vr2 < bpVv.length; vr2++) {
+          var vName = String(bpVv[vr2][bpNi] || "").trim();
+          if (!vName || /test/i.test(vName)) continue;
+          bpVolCount++;
+          var vbp = bpParse(bpGi >= 0 ? bpVv[vr2][bpGi] : "");
+          if (vbp) bpEntries.push({ who: "Volunteer", name: vName, div: "", bra: vbp.bra, sh: vbp.sh, vol: true });
+        }
+      } catch (eBpV) {}
+    }
+    // tally style×size with athlete/volunteer split
+    var bpTally = {};   // key style → {sizes:{}, ath, vol, total}
+    bpEntries.forEach(function (en) {
+      [en.bra, en.sh].forEach(function (g) {
+        if (!g || !g.style) return;
+        if (!bpTally[g.style]) bpTally[g.style] = { sizes: {}, ath: 0, vol: 0, total: 0 };
+        var t4 = bpTally[g.style];
+        t4.sizes[g.size] = (t4.sizes[g.size] || 0) + 1;
+        t4.total++;
+        if (en.vol) t4.vol++; else t4.ath++;
+      });
+    });
+    function bpRows(styles, label) {
+      var rows = [], sub = { sizes: {}, ath: 0, vol: 0, total: 0 };
+      styles.slice().sort(function (a, b) { return (bpTally[b] ? bpTally[b].total : 0) - (bpTally[a] ? bpTally[a].total : 0); })
+        .forEach(function (st) {
+          var t5 = bpTally[st] || { sizes: {}, ath: 0, vol: 0, total: 0 };
+          var r5 = [BP_NAMES[st], BP_COLORS[st]];
+          BP_SIZES.forEach(function (sz) {
+            r5.push(t5.sizes[sz] || 0);
+            sub.sizes[sz] = (sub.sizes[sz] || 0) + (t5.sizes[sz] || 0);
+          });
+          r5.push(t5.total, t5.ath, t5.vol);
+          sub.total += t5.total; sub.ath += t5.ath; sub.vol += t5.vol;
+          rows.push(r5);
+        });
+      var sr = [label, ""];
+      BP_SIZES.forEach(function (sz) { sr.push(sub.sizes[sz] || 0); });
+      sr.push(sub.total, sub.ath, sub.vol);
+      rows.push(sr);
+      return { rows: rows, sub: sub };
+    }
+    var bras = bpRows(["Vitality", "Helix", "Serenity"], "All bras");
+    var shorts = bpRows(["Synergy", "Endurance", "New Heights"], "All shorts");
+    var bpKitsAth = bpEntries.filter(function (e) { return !e.vol; }).length;
+    var bpKitsVol = bpEntries.length - bpKitsAth;
+    var bpOut = [
+      ["Born Primitive Tally — refreshed " + Utilities.formatDate(new Date(), "America/Denver", "M/d/yyyy h:mm a") +
+        " — " + bpKitsAth + " athlete kits (" + bpTeamCount + " teams, latest submission each) + " + bpKitsVol +
+        " volunteer gift kits (" + bpVolCount + " volunteers) = " + bpEntries.length + " kits, 1 bra + 1 short each. TEST rows excluded.",
+        "", "", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", ""],
+      ["Item", "Color", "XS", "S", "M", "L", "XL", "Total", "Athletes", "Volunteers"],
+      ["BRAS", "", "", "", "", "", "", "", "", ""]
+    ];
+    bras.rows.forEach(function (r) { bpOut.push(r); });
+    bpOut.push(["SHORTS", "", "", "", "", "", "", "", "", ""]);
+    shorts.rows.forEach(function (r) { bpOut.push(r); });
+    var gRow = ["GRAND TOTAL (pieces)", ""];
+    BP_SIZES.forEach(function (sz) { gRow.push((bras.sub.sizes[sz] || 0) + (shorts.sub.sizes[sz] || 0)); });
+    gRow.push(bras.sub.total + shorts.sub.total, bras.sub.ath + shorts.sub.ath, bras.sub.vol + shorts.sub.vol);
+    bpOut.push(gRow);
+    bpOut.push(["", "", "", "", "", "", "", "", "", ""]);
+    var bpDetailHead = bpOut.length + 2;
+    bpOut.push(["DETAIL — one row per kit", "", "", "", "", "", "", "", "", ""]);
+    bpOut.push(["Who", "Name / Team", "Division", "Bra", "Bra Size", "Short", "Short Size", "", "", ""]);
+    bpEntries.forEach(function (en) {
+      bpOut.push([en.who, en.name, en.div,
+        (BP_NAMES[en.bra.style] || "?") + " (" + (BP_COLORS[en.bra.style] || "") + ")", en.bra.size,
+        (BP_NAMES[en.sh.style] || "?") + " (" + (BP_COLORS[en.sh.style] || "") + ")", en.sh.size, "", "", ""]);
+    });
+    var bpSh = bpSs.getSheetByName("BP Tally");
+    if (!bpSh) bpSh = bpSs.insertSheet("BP Tally"); else bpSh.clear();
+    bpSh.getRange(1, 1, bpOut.length, 10).setValues(bpOut);
+    bpSh.getRange(1, 1).setFontWeight("bold");
+    bpSh.getRange(3, 1, 1, 10).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+    bpSh.getRange(4, 1).setFontWeight("bold");                       // BRAS
+    bpSh.getRange(8, 1, 1, 10).setFontWeight("bold").setBackground("#f2f2f2");   // All bras
+    bpSh.getRange(9, 1).setFontWeight("bold");                       // SHORTS
+    bpSh.getRange(13, 1, 1, 10).setFontWeight("bold").setBackground("#f2f2f2");  // All shorts
+    bpSh.getRange(14, 1, 1, 10).setFontWeight("bold").setBackground("#fff3cd");  // grand total
+    bpSh.getRange(bpDetailHead - 1, 1).setFontWeight("bold");
+    bpSh.getRange(bpDetailHead, 1, 1, 10).setFontWeight("bold").setBackground("#131313").setFontColor("#ffffff");
+    bpSh.setFrozenRows(3);
+    bpSh.autoResizeColumns(1, 10);
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok", teams: bpTeamCount, volunteers: bpVolCount,
+      athleteKits: bpKitsAth, volunteerKits: bpKitsVol,
+      bras: bras.sub, shorts: shorts.sub, url: bpSs.getUrl()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   // ── Athlete-kit pack-color tallies (drives sold-out logic on the site) ──
   if (action === "ironGamesKitCounts") {
     var kcId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
@@ -1378,6 +1662,30 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ── Clear a team's Athlete Kits rows (captain asked to redo their picks) ──
+  if (action === "ironGamesClearTeamKits") {
+    var ctId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
+    var ctTeam = String(e.parameter.team || "").trim();
+    var ctOut = { status: "ok", team: ctTeam, deleted: 0 };
+    if (!ctTeam) { ctOut.status = "error"; ctOut.message = "team param required"; }
+    else if (ctId) {
+      try {
+        var ctSh = SpreadsheetApp.openById(ctId).getSheetByName("Athlete Kits");
+        if (ctSh && ctSh.getLastRow() > 1) {
+          var ctVals = ctSh.getRange(2, 2, ctSh.getLastRow() - 1, 1).getValues();
+          for (var ctI = ctVals.length - 1; ctI >= 0; ctI--) { // bottom-up so row numbers stay valid
+            if (String(ctVals[ctI][0]).trim().toLowerCase() === ctTeam.toLowerCase()) {
+              ctSh.deleteRow(ctI + 2);
+              ctOut.deleted++;
+            }
+          }
+        }
+      } catch (eCt) { ctOut.status = "error"; ctOut.message = String(eCt); }
+    }
+    return ContentService.createTextOutput(JSON.stringify(ctOut))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   // ── Team kits sheet info (created on first kit submission) ──
   if (action === "ironGamesKitsInfo") {
     var kitsId = PropertiesService.getScriptProperties().getProperty("IRON_KIT_SHEET_ID");
@@ -1387,6 +1695,28 @@ function doGet(e) {
     }
     var kitsSs = SpreadsheetApp.openById(kitsId);
     return ContentService.createTextOutput(JSON.stringify({ status: "ok", url: kitsSs.getUrl(), id: kitsId }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── Generic tab read: ?action=getValues&ssId=<id>[&gid=<gid>|&sheet=<name>] ──
+  // Owner-side read of any tab's display values (avoids browser export/DLP dances).
+  if (action === "getValues") {
+    var gvOut = { status: "ok" };
+    try {
+      var gvSs = SpreadsheetApp.openById(e.parameter.ssId);
+      var gvSh = null;
+      if (e.parameter.gid !== undefined && e.parameter.gid !== null && e.parameter.gid !== "") {
+        var gvGid = Number(e.parameter.gid);
+        gvSs.getSheets().forEach(function (s) { if (s.getSheetId() === gvGid) gvSh = s; });
+      } else if (e.parameter.sheet) {
+        gvSh = gvSs.getSheetByName(e.parameter.sheet);
+      }
+      if (!gvSh) gvSh = gvSs.getSheets()[0];
+      gvOut.sheetName = gvSh.getName();
+      gvOut.gid = gvSh.getSheetId();
+      gvOut.values = gvSh.getDataRange().getDisplayValues();
+    } catch (eGv) { gvOut.status = "error"; gvOut.message = String(eGv); }
+    return ContentService.createTextOutput(JSON.stringify(gvOut))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -1934,10 +2264,14 @@ function insertLeadRowTop_(sh, rowVals) {
 }
 
 // Add a local trial-class waiver signer to Kevin's membership-leads sheet
-// (gid 0 = "2025 Master List"), newest at top. Dedupes by email; returns a
+// (gid 0 = "2025 Master List"), newest at top. Women's Class and Kids/Teens
+// signers aren't membership leads and are skipped. Dedupes by email; returns a
 // short note for the notification email. Columns: Stage, First, Last, Email,
 // Phone, Notes, Interaction Owner/Date, Contact Method, Track Interest, Column 1.
 function appendWaiverLead_(athlete, email, program, referred, isMinor, guardian, when) {
+  if (/women|kids\s*\/?\s*teens/i.test(String(program || ""))) {
+    return "skipped — " + program + " signers aren't tracked as leads";
+  }
   var ss = SpreadsheetApp.openById(WAIVER_LEADS_SHEET_ID);
   var sh = null;
   ss.getSheets().forEach(function (s) { if (s.getSheetId() === 0) sh = s; });
