@@ -403,6 +403,7 @@
       </div>
 
       <!-- ═══ SATURDAY GRID ═══ -->
+      <div id="satSection">
       <div class="section-title">Saturday</div>
       <div class="select-all-row">
         <button type="button" class="select-all-btn" onclick="selectAllInTable('sat-grid')">Select All</button>
@@ -416,6 +417,7 @@
           <tbody></tbody>
         </table>
       </div>
+      </div><!-- /satSection -->
 
 
       <!-- Notes -->
@@ -480,7 +482,26 @@
 
     // ── Holiday / one-off schedule overrides (keyed by weekOf ISO date) ──
     // Each override replaces the listed day(s) with a limited slot list.
+    // Optional flags: noSaturday:true hides the Saturday grid (no Saturday classes that week).
     var holidaySchedules = {
+      "2026-09-28": {
+        label: "Iron Games Weekend — Friday Oct 2: last class is 12:15 PM · No classes Saturday Oct 3 or Sunday Oct 4",
+        noSaturday: true,
+        // Friday (4) runs the normal morning/midday lineup only; nothing after 12:15 PM.
+        days: {
+          4: [
+            ["5:00 AM — CrossFit",    "crossfit"],
+            ["5:30 AM — CrossFit",    "crossfit"],
+            ["6:00 AM — CrossFit",    "crossfit"],
+            ["6:30 AM — CrossFit",    "crossfit"],
+            ["7:45 AM — CrossFit",    "crossfit"],
+            ["8:45 AM — Kodafit",     "kodafit"],
+            ["9:45 AM — CrossFit",    "crossfit"],
+            ["11:00 AM — CrossFit",   "crossfit"],
+            ["12:15 PM — CrossFit",   "crossfit"]
+          ]
+        }
+      },
       "2026-05-25": {
         label: "Memorial Day — Limited Monday Schedule",
         // Day index: 0=Mon, 1=Tue, ... 4=Fri. Each entry is [label, type].
@@ -524,6 +545,13 @@
           var d = +dStr;
           slots.forEach(function(s) { s[2][d] = 0; });
           holiday.days[d].forEach(function(h) {
+            // Reuse the base row when this class already exists (keeps one row per
+            // class time and the normal checkbox names); otherwise add a new row.
+            var existing = null;
+            for (var i = 0; i < slots.length; i++) {
+              if (slots[i][0] === h[0] && slots[i][1] === h[1]) { existing = slots[i]; break; }
+            }
+            if (existing) { existing[2][d] = 1; return; }
             var pattern = [0,0,0,0,0];
             pattern[d] = 1;
             slots.push([h[0], h[1], pattern]);
@@ -534,6 +562,14 @@
       } else {
         banner.style.display = "none";
         banner.textContent = "";
+      }
+
+      // Saturday grid: hidden (and its boxes cleared) when the week has no Saturday classes
+      var satSection = document.getElementById("satSection");
+      var noSat = !!(holiday && holiday.noSaturday);
+      satSection.style.display = noSat ? "none" : "";
+      if (noSat) {
+        satSection.querySelectorAll("input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
       }
 
       wkBody.innerHTML = "";
@@ -580,6 +616,15 @@
     // ── Helpers ──
     function slug(s) {
       return s.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+    }
+
+    // Checkboxes that count for the selected week (excludes a hidden Saturday section)
+    function isActiveCheckbox(cb) {
+      var sat = document.getElementById("satSection");
+      return !(sat && sat.style.display === "none" && sat.contains(cb));
+    }
+    function activeCheckboxes() {
+      return Array.prototype.filter.call(document.querySelectorAll("input[type=checkbox]"), isActiveCheckbox);
     }
 
     function selectAllInTable(tableId) {
@@ -737,12 +782,15 @@
           if (data.slots && data.slots.length > 0) {
             // Clear all first
             document.querySelectorAll("input[type=checkbox]").forEach(function(cb) { cb.checked = false; });
-            // Check the ones from last week
+            // Check the ones from last week (only classes offered this week)
+            var applied = 0;
             data.slots.forEach(function(slotName) {
               var cb = document.querySelector('input[name="' + slotName + '"]');
-              if (cb) cb.checked = true;
+              if (cb && isActiveCheckbox(cb)) { cb.checked = true; applied++; }
             });
-            document.getElementById("copyStatus").textContent = "Loaded " + data.slots.length + " slots from last week.";
+            var skipped = data.slots.length - applied;
+            document.getElementById("copyStatus").textContent = "Loaded " + applied + " slots from last week" +
+              (skipped > 0 ? " (" + skipped + " not offered this week)." : ".");
           } else {
             document.getElementById("copyStatus").textContent = "No previous submission found.";
           }
@@ -769,8 +817,8 @@
         slots: []
       };
 
-      document.querySelectorAll("input[type=checkbox]:checked").forEach(function(cb) {
-        data.slots.push(cb.name);
+      activeCheckboxes().forEach(function(cb) {
+        if (cb.checked) data.slots.push(cb.name);
       });
 
       if (data.slots.length === 0) {
