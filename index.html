@@ -468,6 +468,36 @@
       ["6:30 PM — CrossFit",  "crossfit",  [1,1,1,1,0]]
     ];
 
+    // New weekday Hyrox lineup starting the week of 2026-10-05 (Saturday unchanged):
+    // 5:00 / 6:00 / 7:00 / 9:00 AM + 12:00 PM Mon/Wed/Fri; 4:00 + 5:15 PM Mon/Wed. No Tue/Thu Hyrox.
+    var HYROX_MWF_FROM = "2026-10-05";
+    var weekdaySlotsMWF = [
+      ["5:00 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["5:00 AM — Hyrox",     "hyrox",     [1,0,1,0,1]],
+      ["5:30 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["6:00 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["6:00 AM — Hyrox",     "hyrox",     [1,0,1,0,1]],
+      ["6:30 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["7:00 AM — Hyrox",     "hyrox",     [1,0,1,0,1]],
+      ["7:45 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["8:45 AM — Kodafit",   "kodafit",   [1,0,1,0,1]],
+      ["9:00 AM — Hyrox",     "hyrox",     [1,0,1,0,1]],
+      ["9:45 AM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["11:00 AM — CrossFit", "crossfit",  [1,1,1,1,1]],
+      ["12:00 PM — Hyrox",    "hyrox",     [1,0,1,0,1]],
+      ["12:15 PM — CrossFit", "crossfit",  [1,1,1,1,1]],
+      ["3:30 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["4:00 PM — CrossFit",  "crossfit",  [1,1,1,1,1]],
+      ["4:00 PM — Hyrox",     "hyrox",     [1,0,1,0,0]],
+      ["4:30 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["5:00 PM — CrossFit",  "crossfit",  [0,0,0,0,1]],
+      ["5:15 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["5:15 PM — Hyrox",     "hyrox",     [1,0,1,0,0]],
+      ["5:45 PM — CrossFit",  "crossfit",  [1,1,1,1,0]],
+      ["6:00 PM — CrossFit",  "crossfit",  [0,0,0,0,1]],
+      ["6:30 PM — CrossFit",  "crossfit",  [1,1,1,1,0]]
+    ];
+
     var satSlots = [
       ["6:00 AM — Hyrox",     "hyrox"],
       ["7:00 AM — CrossFit",  "crossfit"],
@@ -534,7 +564,8 @@
       var holiday = holidaySchedules[weekOf];
 
       // Deep-copy the base slots so we can mutate per-render
-      var slots = weekdaySlots.map(function(s) { return [s[0], s[1], s[2].slice()]; });
+      var baseSlots = (weekOf && weekOf >= HYROX_MWF_FROM) ? weekdaySlotsMWF : weekdaySlots;
+      var slots = baseSlots.map(function(s) { return [s[0], s[1], s[2].slice()]; });
 
       if (holiday) {
         banner.textContent = holiday.label;
