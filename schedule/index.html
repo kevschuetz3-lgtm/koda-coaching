@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Koda Coaching Schedule</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+
+    :root {
+      --bg: #1a1a2e;
+      --panel: #16213e;
+      --card: #1f2b4d;
+      --line: #2c3a63;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .wrap { max-width: 1400px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px 20px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 1.5rem; color: #fff; line-height: 1.2; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+    .sub a { color: var(--accent); text-decoration: none; }
+    .sub a:hover { text-decoration: underline; }
+
+    .weeknav { display: flex; align-items: center; gap: 10px; }
+    .navbtn {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+    .navbtn:hover:not(:disabled) { border-color: var(--accent); }
+    .navbtn:disabled { opacity: 0.35; cursor: default; }
+    .weeklabel { text-align: center; min-width: 190px; }
+    #weekTitle { font-weight: 700; font-size: 1.1rem; }
+    .status { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+    .status button {
+      background: none; border: none; color: var(--accent);
+      font: inherit; cursor: pointer; padding: 0 2px;
+    }
+
+    .notice {
+      background: #3b2f12;
+      border: 1px solid #a16207;
+      color: #fde68a;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.95rem;
+    }
+    .notice button {
+      background: none; border: none; color: #fff; text-decoration: underline;
+      font: inherit; cursor: pointer; margin-left: 6px;
+    }
+
+    /* ── Filters ── */
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .ctl-row + .ctl-row { margin-top: 12px; }
+    .coach-select {
+      display: none;
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: #fff;
+      font-size: 1rem;
+    }
+    .ctl-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.92rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip:hover { border-color: #4b5d91; }
+    .chip[aria-pressed="true"] {
+      background: #fff;
+      color: #111827;
+      border-color: #fff;
+      font-weight: 700;
+    }
+    .dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex: none;
+      box-shadow: 0 0 0 1.5px rgba(255,255,255,0.55);
+    }
+    .chip[aria-pressed="true"] .dot { box-shadow: 0 0 0 1.5px rgba(0,0,0,0.35); }
+    .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+
+    /* ── Coach summary ── */
+    .mine {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+      background: var(--panel);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .mine-name { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .mine-name .dot { width: 14px; height: 14px; }
+    .mine-stats { color: var(--muted); font-size: 0.92rem; flex: 1; }
+    .mine-stats b { color: var(--text); }
+    .linkbtn {
+      background: none; border: 1px solid var(--line); color: var(--text);
+      border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 0.88rem; cursor: pointer;
+    }
+    .linkbtn:hover { border-color: var(--accent); }
+
+    /* ── Day tabs (phones) ── */
+    .daytabs {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg);
+      padding: 6px 0 10px;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .daytabs::-webkit-scrollbar { display: none; }
+    .daytab {
+      flex: 1 0 auto;
+      min-width: 46px;
+      padding: 7px 4px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+      text-align: center;
+      cursor: pointer;
+    }
+    .daytab .dn { display: block; font-size: 0.78rem; color: var(--muted); }
+    .daytab .dd { display: block; font-size: 1.05rem; font-weight: 700; }
+    .daytab.today { border-color: var(--accent); }
+    .daytab[aria-selected="true"] { background: #fff; color: #111827; border-color: #fff; }
+    .daytab[aria-selected="true"] .dn { color: #374151; }
+
+    /* ── Week board ── */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+    .day {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px;
+      min-height: 120px;
+    }
+    .day.today { border-color: var(--accent); }
+    .day-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 2px 4px 8px;
+    }
+    .day-name { font-weight: 700; font-size: 1rem; }
+    .day-date { color: var(--muted); font-size: 0.85rem; }
+    .day-note {
+      font-size: 0.78rem; color: #fde68a;
+      padding: 0 4px 8px;
+    }
+    .today-pill {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      background: var(--accent); color: #0b1220; border-radius: 999px; padding: 1px 7px;
+    }
+    .empty-day { color: var(--muted); font-size: 0.85rem; padding: 6px 4px; }
+
+    .card {
+      background: var(--card);
+      border-radius: 9px;
+      border-left: 5px solid var(--tc, #cbd5e1);
+      padding: 7px 9px 8px;
+      margin-bottom: 6px;
+    }
+    .c-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 3px 6px; }
+    .c-time { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+    .tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #0b1220;
+      background: var(--tc, #cbd5e1);
+      border-radius: 999px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+    .c-who { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 5px; }
+    .who {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.95rem;
+      background: none; border: none; color: inherit; font-family: inherit;
+      cursor: pointer; padding: 0;
+    }
+    .who:hover { text-decoration: underline; }
+    .who.me { font-weight: 800; }
+    .no-coach { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    .card.canceled { opacity: 0.55; }
+    .card.canceled .c-time, .card.canceled .who { text-decoration: line-through; }
+
+    .message {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .message strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 6px; }
+    .message button {
+      margin-top: 12px; background: var(--accent); color: #0b1220; border: none;
+      border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 700; cursor: pointer;
+    }
+
+    footer { color: var(--muted); font-size: 0.82rem; text-align: center; margin: 24px 0 8px; }
+
+    /* Narrow screens: one day at a time (everyone), or the coach's whole week stacked */
+    @media (max-width: 899px) {
+      body { padding: 12px; }
+      h1 { font-size: 1.3rem; }
+      .top { flex-direction: column; align-items: stretch; }
+      .weeknav { justify-content: space-between; }
+      .daytabs { display: flex; gap: 4px; }
+      .daytab { flex: 1 1 0; min-width: 0; }
+      #coachChips { display: none; }
+      .coach-select { display: block; }
+      #typeChips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px; }
+      #typeChips::-webkit-scrollbar { display: none; }
+      #typeChips .chip { flex: none; }
+      .board { display: block; }
+      .board .day { margin-bottom: 10px; }
+      .board:not(.all-days) .day:not(.active) { display: none; }
+      .daytabs.hide { display: none; }
+      .card { padding: 9px 11px 10px; }
+      .c-time { font-size: 1.02rem; }
+      .tag { font-size: 0.75rem; }
+      .who { font-size: 1.02rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>Koda Coaching Schedule</h1>
+        <div class="sub">Tap your name to see your week · <a href="../">Submit availability</a></div>
+      </div>
+      <div class="weeknav">
+        <button class="navbtn" id="prevWeek" aria-label="Previous week">&#8249;</button>
+        <div class="weeklabel">
+          <div id="weekTitle">Loading…</div>
+          <div class="status" id="status"></div>
+        </div>
+        <button class="navbtn" id="nextWeek" aria-label="Next week">&#8250;</button>
+      </div>
+    </header>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <section class="controls" id="controls" hidden>
+      <div class="ctl-row">
+        <label class="ctl-label" for="coachSelect">Coach</label>
+        <div class="chips" id="coachChips"></div>
+        <select id="coachSelect" class="coach-select"></select>
+      </div>
+      <div class="ctl-row">
+        <div class="ctl-label">Classes</div>
+        <div class="chips" id="typeChips"></div>
+      </div>
+    </section>
+
+    <section class="mine" id="mine" hidden></section>
+    <nav class="daytabs" id="dayTabs" role="tablist" aria-label="Day"></nav>
+    <main class="board" id="board">
+      <div class="message"><strong>Loading the schedule…</strong>This takes a couple of seconds.</div>
+    </main>
+
+    <footer>Pulled live from the Koda schedule sheet, so changes show up when you refresh.</footer>
+  </div>
+
+<script>
+(function () {
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk14st_Ix70GM0T2I8aKRU9HRBlotk_Up-Ikh5MHxYuUdDj4xIvj36r8lvQh15gPvm/exec";
+
+  var TYPES = {
+    crossfit: { label: "CrossFit",     color: "#60a5fa" },
+    hyrox:    { label: "Hyrox",        color: "#facc15" },
+    kodafit:  { label: "KodaFit",      color: "#f472b6" },
+    womens:   { label: "Women's",      color: "#c4b5fd" },
+    kids:     { label: "Kids & Teens", color: "#4ade80" },
+    comp:     { label: "Comp Class",   color: "#fb923c" },
+    opengym:  { label: "Open Gym",     color: "#94a3b8" },
+    kratos:   { label: "Kratos",       color: "#f87171" },
+    other:    { label: "Other",        color: "#cbd5e1" }
+  };
+  var TYPE_ORDER = ["crossfit", "hyrox", "kodafit", "womens", "kids", "comp", "opengym", "kratos", "other"];
+  var DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  var DAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  var state = {
+    data: null,          // raw backend response
+    week: null,          // parsed week
+    coach: null,         // selected coach name
+    types: [],           // selected class types (empty = all)
+    day: null,           // active day index on phones
+    loading: false,
+    fetchedAt: 0,
+    explicitWeek: false  // week chosen with the arrows / ?week= (kept in the URL)
+  };
+  var seq = 0;           // only the latest request may render
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ── Small storage helpers (per-viewer conveniences only) ──
+  function store(key, val) {
+    try { localStorage.setItem("koda-sched:" + key, JSON.stringify(val)); } catch (e) {}
+  }
+  function recall(key) {
+    try { var v = localStorage.getItem("koda-sched:" + key); return v ? JSON.parse(v) : null; } catch (e) { return null; }
+  }
+
+  // ── Dates ──
+  function ymd(d) {
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  function parseYmd(s) {
+    var p = s.split("-");
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+  function addDays(s, n) { var d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); }
+  function mondayOf(s) { var wd = parseYmd(s).getDay(); return addDays(s, wd === 0 ? -6 : 1 - wd); }
+  function weekTitle(mon) {
+    var a = parseYmd(mon), b = parseYmd(addDays(mon, 6));
+    var left = MONTHS[a.getMonth()] + " " + a.getDate();
+    var right = (a.getMonth() === b.getMonth() ? "" : MONTHS[b.getMonth()] + " ") + b.getDate();
+    return "Week of " + left + " – " + right;
+  }
+
+  // ── Parsing the sheet block ──
+  // rows[i] = [B week date, C class time, D-H Mon-Fri, I Sat time, J Sat coach, K Sunday]
+  var TIME_RANGE = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i;
+  var TIME_ONE = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i;
+  var STRIP = [
+    /\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*[-–]\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi,
+    /\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi,
+    /koda\s*kids/gi, /koda\s*fit/gi, /hyrox/gi, /women'?s/gi, /\bkids\b/gi, /\bteens?\b/gi,
+    /comp\s*class/gi, /open\s*gym/gi, /kratos/gi, /specialty/gi, /\bsolo\b/gi, /cancel+ed/gi,
+    /\bshred\b/gi, /foundations/gi
+  ];
+
+  function minutes(h, m, ap) {
+    h = Number(h) % 12; if (/pm/i.test(ap)) h += 12;
+    return h * 60 + Number(m || 0);
+  }
+  function fmt(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60, ap = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return h + ":" + ("0" + m).slice(-2) + " " + ap;
+  }
+  function findTime(s) {
+    var r = TIME_RANGE.exec(s);
+    if (r) {
+      var apStart = r[3] || r[6];
+      var start = minutes(r[1], r[2], apStart), end = minutes(r[4], r[5], r[6]);
+      var startText = apStart.toUpperCase() === r[6].toUpperCase() ? fmt(start).replace(/ (AM|PM)$/, "") : fmt(start);
+      return { start: start, text: startText + "–" + fmt(end) };   // "1:30–3:00 PM"
+    }
+    var o = TIME_ONE.exec(s);
+    if (o) { var t = minutes(o[1], o[2], o[3]); return { start: t, text: fmt(t) }; }
+    return null;
+  }
+  function detectType(s) {
+    if (/hyrox/i.test(s)) return "hyrox";
+    if (/koda\s*fit/i.test(s)) return "kodafit";
+    if (/women/i.test(s)) return "womens";
+    if (/kids|\bteens?\b/i.test(s)) return "kids";
+    if (/open\s*gym/i.test(s)) return "opengym";
+    if (/comp\s*class/i.test(s)) return "comp";
+    if (/kratos/i.test(s)) return "kratos";
+    if (/shred/i.test(s)) return "other";
+    return null;
+  }
+  function titleFor(type, s) {
+    if (type === "kids") return /koda\s*kids/i.test(s) ? "Koda Kids" : /teen/i.test(s) ? "Teens" : "Kids";
+    if (type === "other" && /shred/i.test(s)) return "Shred";
+    return TYPES[type].label;
+  }
+  function namesIn(text) {
+    var out = [];
+    text.split(/[\n|\/&,+]/).forEach(function (line) {
+      STRIP.forEach(function (re) { line = line.replace(re, " "); });
+      line = line.replace(/[()\[\]]+/g, " ").replace(/\s+/g, " ").trim();
+      if (line && !/^[-–.:]+$/.test(line) && out.indexOf(line) < 0) out.push(line);
+    });
+    return out;
+  }
+
+  function parseCell(text, label, fallbackType) {
+    var joined = text.replace(/\n/g, " ");
+    var type = detectType(joined) || detectType(label) || fallbackType;
+    // the cell's own time wins ("Jamie 5:00 PM"), unless it's the same start as the row's range
+    var cellTime = findTime(text), rowTime = findTime(label);
+    var time = cellTime && !(rowTime && rowTime.start === cellTime.start) ? cellTime : (rowTime || cellTime);
+    return {
+      type: type,
+      title: titleFor(type, detectType(joined) ? joined : label),
+      start: time ? time.start : null,
+      timeText: time ? time.text : "",
+      coaches: namesIn(text),
+      canceled: /cancel+ed/i.test(joined)
+    };
+  }
+
+  function parseWeek(data) {
+    var rows = data.rows, header = rows[0] || [];
+    var days = DAY_KEYS.map(function (k, i) {
+      var head = String(header[i < 5 ? i + 2 : i === 5 ? 8 : 9] || "");
+      var note = (head.match(/\(([^)]+)\)/) || [])[1] || "";
+      return { key: k, long: DAY_LONG[i], date: addDays(data.week, i), note: note, classes: [] };
+    });
+    var order = 0;
+    function add(d, text, label, fallbackType) {
+      if (!String(text).trim()) return;
+      var c = parseCell(String(text), String(label || ""), fallbackType);
+      c.order = order++;
+      days[d].classes.push(c);
+    }
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r], label = row[1] || "";
+      for (var d = 0; d < 5; d++) add(d, row[d + 2] || "", label, "crossfit");
+      add(5, row[8] || "", row[7] || label, "crossfit");
+      add(6, row[9] || "", "", "opengym");
+    }
+    days.forEach(function (day) {
+      day.classes.sort(function (a, b) {
+        if (a.start === null && b.start === null) return a.order - b.order;
+        if (a.start === null) return -1;
+        if (b.start === null) return 1;
+        return a.start - b.start || a.order - b.order;
+      });
+    });
+
+    // Coach colors: that week's legend in col A, then any other names found
+    var colors = {};
+    (data.legend || []).forEach(function (l) { colors[l.name.trim().toLowerCase()] = l.bg; });
+    var coaches = {};
+    days.forEach(function (day) {
+      day.classes.forEach(function (c) {
+        c.coaches.forEach(function (n) {
+          var k = n.toLowerCase();
+          if (!coaches[k]) coaches[k] = { name: n, color: colors[k] || "#64748b", count: 0 };
+          if (!c.canceled) coaches[k].count++;
+        });
+      });
+    });
+    // A full week has ~120 classes; the blank template for a new week already carries a few
+    // (KodaFit, Comp Class), so treat a week as posted once a good share is filled in
+    var filled = 0;
+    days.forEach(function (day) { day.classes.forEach(function (c) { if (c.coaches.length) filled++; }); });
+    return { monday: data.week, days: days, coaches: coaches, staffed: filled > 0, posted: filled >= 30 };
+  }
+
+  // ── Rendering ──
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  }
+  function coachKey() { return state.coach ? state.coach.toLowerCase() : null; }
+  function isNarrow() { return window.matchMedia("(max-width: 899px)").matches; }
+  function visible(c) {
+    if (state.types.length && state.types.indexOf(c.type) < 0) return false;
+    if (state.coach) {
+      var k = coachKey();
+      if (!c.coaches.some(function (n) { return n.toLowerCase() === k; })) return false;
+    }
+    return true;
+  }
+
+  function renderControls() {
+    var w = state.week;
+    var names = Object.keys(w.coaches).map(function (k) { return w.coaches[k]; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+    $("coachChips").innerHTML = names.map(function (c) {
+      var on = coachKey() === c.name.toLowerCase();
+      return '<button class="chip" data-coach="' + esc(c.name) + '" aria-pressed="' + on + '">' +
+        '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</button>';
+    }).join("");
+    var sel = state.coach && !w.coaches[coachKey()] ? [{ name: state.coach }] : [];
+    $("coachSelect").innerHTML = '<option value="">Everyone — choose your name</option>' +
+      sel.concat(names).map(function (c) {
+        return '<option value="' + esc(c.name) + '"' + (coachKey() === c.name.toLowerCase() ? " selected" : "") + '>' +
+          esc(c.name) + '</option>';
+      }).join("");
+
+    var present = {};
+    w.days.forEach(function (d) { d.classes.forEach(function (c) { present[c.type] = true; }); });
+    var chips = ['<button class="chip" data-type="" aria-pressed="' + (state.types.length === 0) + '">All classes</button>'];
+    TYPE_ORDER.forEach(function (t) {
+      if (!present[t]) return;
+      chips.push('<button class="chip" data-type="' + t + '" aria-pressed="' + (state.types.indexOf(t) >= 0) + '">' +
+        '<span class="swatch" style="background:' + TYPES[t].color + '"></span>' + TYPES[t].label + '</button>');
+    });
+    $("typeChips").innerHTML = chips.join("");
+    $("controls").hidden = false;
+  }
+
+  function renderMine() {
+    var box = $("mine");
+    if (!state.coach) { box.hidden = true; return; }
+    var info = state.week.coaches[coachKey()];
+    var byType = {}, total = 0;
+    state.week.days.forEach(function (d) {
+      d.classes.forEach(function (c) {
+        if (c.canceled || !c.coaches.some(function (n) { return n.toLowerCase() === coachKey(); })) return;
+        total++; byType[c.type] = (byType[c.type] || 0) + 1;
+      });
+    });
+    var parts = TYPE_ORDER.filter(function (t) { return byType[t]; })
+      .map(function (t) { return byType[t] + " " + TYPES[t].label; });
+    box.innerHTML =
+      '<div class="mine-name"><span class="dot" style="background:' + esc(info ? info.color : "#64748b") + '"></span>' +
+      esc(state.coach) + '</div>' +
+      '<div class="mine-stats">' + (info
+        ? '<b>' + total + ' class' + (total === 1 ? "" : "es") + '</b> this week' + (parts.length > 1 ? " · " + esc(parts.join(", ")) : "")
+        : "Not on the schedule this week") + '</div>' +
+      '<button class="linkbtn" id="showAll">Show everyone</button>';
+    box.hidden = false;
+  }
+
+  function cardHtml(c) {
+    var tc = TYPES[c.type] ? TYPES[c.type].color : TYPES.other.color;
+    var who = c.coaches.length
+      ? '<div class="c-who">' + c.coaches.map(function (n) {
+          var info = state.week.coaches[n.toLowerCase()];
+          var me = coachKey() === n.toLowerCase();
+          return '<button class="who' + (me ? " me" : "") + '" data-coach="' + esc(n) + '">' +
+            '<span class="dot" style="background:' + esc(info ? info.color : "#64748b") + '"></span>' + esc(n) + '</button>';
+        }).join("") + '</div>'
+      : (c.canceled ? '<div class="no-coach">Canceled</div>' : "");
+    return '<div class="card' + (c.canceled ? " canceled" : "") + '" style="--tc:' + tc + '">' +
+      '<div class="c-top"><span class="c-time">' + esc(c.timeText || "") + '</span>' +
+      '<span class="tag">' + esc(c.title) + '</span></div>' + who + '</div>';
+  }
+
+  function renderBoard() {
+    var w = state.week, board = $("board"), today = ymd(new Date());
+    if (!w.staffed) {
+      board.className = "board";
+      board.innerHTML = '<div class="message"><strong>This week isn’t posted yet</strong>' +
+        'Check back soon, or look at another week with the arrows.' +
+        (w.monday !== mondayOf(today) ? '<br><button id="goCurrent">Go to this week</button>' : "") + '</div>';
+      $("dayTabs").innerHTML = ""; $("dayTabs").classList.add("hide");
+      return;
+    }
+    if (state.day === null) {
+      var ti = w.days.map(function (d) { return d.date; }).indexOf(today);
+      state.day = ti >= 0 ? ti : 0;
+    }
+    var allDays = !!state.coach;   // a coach's own week shows every day, stacked on phones
+    board.className = "board" + (allDays ? " all-days" : "");
+    $("dayTabs").classList.toggle("hide", allDays);
+
+    $("dayTabs").innerHTML = w.days.map(function (d, i) {
+      return '<button class="daytab' + (d.date === today ? " today" : "") + '" role="tab" data-day="' + i +
+        '" aria-selected="' + (i === state.day) + '"><span class="dn">' + d.key + '</span>' +
+        '<span class="dd">' + parseYmd(d.date).getDate() + '</span></button>';
+    }).join("");
+
+    var narrow = isNarrow();
+    var anyShown = w.days.some(function (d) { return d.classes.some(visible); });
+    if (!anyShown) {
+      board.innerHTML = state.coach && !w.coaches[coachKey()]
+        ? '<div class="message"><strong>' + esc(state.coach) + ' isn’t on the schedule this week</strong>' +
+          '<button id="showAll">Show everyone</button></div>'
+        : '<div class="message"><strong>No classes match</strong>Turn on more class types above.</div>';
+      $("dayTabs").classList.add("hide");
+      return;
+    }
+    board.innerHTML = w.days.map(function (d, i) {
+      var shown = d.classes.filter(visible);
+      if (allDays && narrow && !shown.length) return "";
+      var dt = parseYmd(d.date);
+      return '<section class="day' + (i === state.day ? " active" : "") + (d.date === today ? " today" : "") + '">' +
+        '<div class="day-head"><span class="day-name">' + (narrow ? d.long : d.key) + '</span>' +
+        (d.date === today ? '<span class="today-pill">Today</span>' : '<span class="day-date">' + MONTHS[dt.getMonth()] + " " + dt.getDate() + '</span>') +
+        '</div>' + (d.note ? '<div class="day-note">' + esc(d.note) + '</div>' : "") +
+        (shown.length ? shown.map(cardHtml).join("") : '<div class="empty-day">' + (state.coach ? "Off" : "No classes") + '</div>') +
+        '</section>';
+    }).join("");
+  }
+
+  function renderHeader() {
+    var d = state.data;
+    $("weekTitle").textContent = d ? weekTitle(d.week) : "Koda Coaching Schedule";
+    var weeks = d ? d.weeks || [] : [];
+    $("prevWeek").disabled = !d;
+    $("nextWeek").disabled = !d || !weeks.some(function (w) { return w > d.week; });
+    var when = state.fetchedAt ? new Date(state.fetchedAt) : null;
+    $("status").innerHTML = state.loading
+      ? "Updating…"
+      : when ? "Updated " + when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) +
+        ' · <button id="refresh">Refresh</button>' : "";
+  }
+
+  function render() {
+    renderHeader();
+    if (!state.week) return;
+    renderControls();
+    renderMine();
+    renderBoard();
+  }
+
+  // ── Data ──
+  function syncUrl() {
+    var p = new URLSearchParams();
+    if (state.data && state.explicitWeek) p.set("week", state.data.week);
+    if (state.coach) p.set("coach", state.coach);
+    var qs = p.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+  }
+
+  function showNotice(html) {
+    $("notice").innerHTML = html || "";
+    $("notice").hidden = !html;
+  }
+
+  // opts: explicit (arrows / ?week=), resetDay, sundayDefault (Sunday asks for next week first)
+  function load(date, opts) {
+    opts = opts || {};
+    var my = ++seq;
+    state.loading = true;
+    renderHeader();
+    var cached = recall("week:" + date);
+    if (cached && cached.data) apply(cached.data, cached.at, date, opts, my, true);
+    fetch(SCRIPT_URL + "?action=liveSchedule&week=" + encodeURIComponent(date))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (my !== seq) return;
+        if (data.status !== "ok") throw new Error(data.message || data.status);
+        store("week:" + date, { data: data, at: Date.now() });
+        state.loading = false;
+        apply(data, Date.now(), date, opts, my, false);
+      })
+      .catch(function (err) {
+        if (my !== seq) return;
+        state.loading = false;
+        renderHeader();
+        if (!state.week) {
+          $("board").innerHTML = '<div class="message"><strong>Couldn’t load the schedule</strong>' +
+            esc(String(err.message || err)) + '<br><button id="retry">Try again</button></div>';
+          $("retry").onclick = function () { load(date, opts); };
+        } else {
+          showNotice("Couldn’t refresh just now, so this may be out of date. " + '<button id="retryNotice">Try again</button>');
+          $("retryNotice").onclick = function () { showNotice(""); load(date, opts); };
+        }
+      });
+  }
+
+  function apply(data, at, requested, opts, my, fromCache) {
+    if (my !== seq) return;
+    var week = parseWeek(data);
+    // Sunday: next week isn't posted yet → show this week instead (wait for live data to decide)
+    if (opts.sundayDefault && !week.posted && data.week === requested) {
+      if (!fromCache) load(addDays(requested, -1), { resetDay: true });
+      return;
+    }
+    var mon = mondayOf(requested);
+    state.data = data;
+    state.week = week;
+    state.fetchedAt = at;
+    state.explicitWeek = !!opts.explicit;
+    if (opts.resetDay) state.day = null;
+    showNotice(opts.explicit && data.week !== mon
+      ? "The week of " + MONTHS[parseYmd(mon).getMonth()] + " " + parseYmd(mon).getDate() +
+        " isn’t on the schedule sheet yet, so this is the latest posted week."
+      : week.staffed && !week.posted
+      ? "This week is still being put together. Here’s what’s filled in so far."
+      : "");
+    syncUrl();
+    render();
+  }
+
+  // ── Events ──
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.coach !== undefined) {
+      var name = t.dataset.coach;
+      var same = state.coach && state.coach.toLowerCase() === name.toLowerCase();
+      state.coach = same && t.classList.contains("chip") ? null : name;   // chip toggles, name in a card selects
+      syncUrl(); render();
+      if (state.coach) $("mine").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (t.dataset.type !== undefined) {
+      var ty = t.dataset.type;
+      if (!ty) state.types = [];
+      else {
+        var i = state.types.indexOf(ty);
+        if (i >= 0) state.types.splice(i, 1); else state.types.push(ty);
+      }
+      store("types", state.types);
+      render();
+    } else if (t.dataset.day !== undefined) {
+      state.day = Number(t.dataset.day);
+      renderBoard();
+    } else if (t.id === "showAll") {
+      state.coach = null; syncUrl(); render();
+    } else if (t.id === "refresh") {
+      load(state.data.week, { explicit: state.explicitWeek });
+    } else if (t.id === "goCurrent") {
+      load(ymd(new Date()), { resetDay: true });
+    } else if ((t.id === "prevWeek" || t.id === "nextWeek") && state.data) {
+      load(addDays(state.data.week, t.id === "prevWeek" ? -7 : 7), { explicit: true, resetDay: true });
+    }
+  });
+
+  $("coachSelect").addEventListener("change", function () {
+    state.coach = this.value || null;
+    syncUrl(); render();
+  });
+  window.addEventListener("resize", function () { if (state.week) renderBoard(); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && state.data && !state.loading &&
+        Date.now() - state.fetchedAt > 3 * 60 * 1000) {
+      load(state.data.week, { explicit: state.explicitWeek });
+    }
+  });
+
+  // ── Start ──
+  var params = new URLSearchParams(location.search);
+  state.coach = params.get("coach") || null;
+  var savedTypes = recall("types");
+  if (Array.isArray(savedTypes)) state.types = savedTypes.filter(function (t) { return TYPES[t]; });
+  var start = params.get("week");
+  if (start && /^\d{4}-\d{2}-\d{2}$/.test(start)) {
+    load(start, { explicit: true });
+  } else {
+    var now = new Date();
+    if (now.getDay() === 0) load(addDays(ymd(now), 1), { sundayDefault: true });   // Sunday → next week
+    else load(ymd(now));
+  }
+})();
+</script>
+</body>
+</html>
