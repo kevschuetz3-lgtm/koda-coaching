@@ -170,39 +170,39 @@
       width: 100%; margin-top: 14px; table-layout: fixed;
       border-collapse: separate; border-spacing: 0;
       border: 1px solid var(--line);
-      font-size: 14px; line-height: 1.3;
+      font-size: 16px; line-height: 1.3;
     }
-    .grid col.tcol { width: 78px; }
+    .grid col.tcol { width: 88px; }
     .grid th, .grid td {
       border-top: 1px solid var(--line); border-left: 1px solid var(--line);
-      padding: 6px 8px; text-align: left; vertical-align: top;
+      padding: 8px 6px; text-align: center; vertical-align: middle;
     }
     .grid thead th:first-child, .grid .tc, .grid tr.band th { border-left: 0; }
     .grid thead th {
       position: sticky; top: 0; z-index: 1;
-      border-top: 0; background: var(--bg); padding: 8px; font-weight: 600; white-space: nowrap;
+      border-top: 0; background: var(--bg); padding: 9px 6px; font-size: 15px; font-weight: 600; white-space: nowrap;
       box-shadow: 0 1px 0 var(--line);
     }
-    .grid thead th b { font-size: 16px; }
+    .grid thead th b { font-size: 18px; }
     .grid .tc { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; background: var(--bg); }
-    .grid .tc small { font-size: 11px; color: var(--muted); font-weight: 600; margin-left: 2px; }
-    .grid .tc.notime { white-space: normal; font-size: 12px; color: var(--muted); }
+    .grid .tc small { font-size: 12px; color: var(--muted); font-weight: 600; margin-left: 2px; }
+    .grid .tc.notime { white-space: normal; font-size: 13px; color: var(--muted); }
     .grid tr.band th {
-      background: var(--band); color: var(--muted);
-      font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 4px 8px;
+      background: var(--band); color: var(--muted); text-align: left;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 5px 10px;
     }
-    .grid .pl { font-size: 12px; margin-right: 5px; }
+    .grid .pl { font-size: 13px; margin-right: 5px; }
     .grid .n { font-weight: 600; overflow-wrap: anywhere; }
-    .grid .who-c { color: var(--muted); font-weight: 400; font-size: 12px; }
+    .grid .who-c { color: var(--muted); font-weight: 400; font-size: 13px; }
     /* today's column: header in blue, thin blue lines down both sides */
     .grid thead th.today { color: var(--accent); }
     .grid .today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45); }
     .grid thead th.today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45), 0 1px 0 var(--line); }
     .tlabel {
-      display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--accent);
     }
-    .dnote { display: block; font-size: 11px; font-weight: 400; color: var(--muted); white-space: normal; }
+    .dnote { display: block; font-size: 12px; font-weight: 400; color: var(--muted); white-space: normal; }
     .grid-note { color: var(--muted); font-size: 13px; margin-top: 10px; }
 
     /* ── My classes ── */
@@ -215,14 +215,14 @@
     .strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
     .sday { border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 110px; }
     .sday.today { border: 2px solid rgba(29, 78, 216, 0.45); }
-    .sday h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .sday h3 b { font-size: 17px; }
-    .si { margin-top: 6px; padding: 6px 8px; border-radius: 8px; font-size: 13px; }
-    .si .st { display: block; font-weight: 700; font-size: 15px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .sday h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; text-align: center; }
+    .sday h3 b { font-size: 18px; }
+    .si { margin-top: 6px; padding: 7px 6px; border-radius: 8px; font-size: 14px; text-align: center; }
+    .si .st { display: block; font-weight: 700; font-size: 16px; color: var(--text); font-variant-numeric: tabular-nums; }
     .si.past .st { color: var(--faded); }
     .si .sw { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
     .si.canceled .st { text-decoration: line-through; }
-    .soff { color: var(--muted); font-size: 14px; margin-top: 6px; }
+    .soff { color: var(--muted); font-size: 14px; margin-top: 6px; text-align: center; }
 
     .picker { margin-top: 22px; }
     .picker h2 { font-size: 22px; }
@@ -262,9 +262,12 @@
       .filters { margin-top: 16px; }
     }
     @media (min-width: 640px) and (max-width: 900px) {
-      .grid { font-size: 13px; }
-      .grid col.tcol { width: 70px; }
-      .grid th, .grid td { padding: 5px 6px; }
+      .grid { font-size: 14.5px; }
+      .grid col.tcol { width: 76px; }
+      .grid th, .grid td { padding: 7px 4px; }
+      .grid thead th { font-size: 14px; }
+      .grid thead th b { font-size: 16px; }
+      .grid .pl { font-size: 12px; margin-right: 4px; }
       .strip { gap: 6px; }
       .sday { padding: 8px; }
     }
