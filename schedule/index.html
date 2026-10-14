@@ -4,339 +4,263 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#1a1a2e">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e1013" media="(prefers-color-scheme: dark)">
   <title>Koda Coaching Schedule</title>
   <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --seg: #e6e8ed;
+      --text: #15171c;
+      --muted: #5d6470;
+      --line: #e3e6eb;
+      --strong: #15171c;
+      --on-strong: #ffffff;
+      --accent: #1d4ed8;
+      --needs: #b42318;
+      --warn-bg: #fff6db; --warn-text: #5c4300; --warn-line: #f0d98a;
+      --hyrox-bg: #fcefc2;   --hyrox: #634700;
+      --womens-bg: #ece6fb;  --womens: #46298f;
+      --kids-bg: #e0f2e5;    --kids: #1b6131;
+      --kodafit-bg: #fbe4ef; --kodafit: #86194f;
+      --comp-bg: #fde8d8;    --comp: #843806;
+      --opengym-bg: #eceef2; --opengym: #3b4250;
+      --kratos-bg: #fbe3e3;  --kratos: #861d1d;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0e1013;
+        --surface: #171a20;
+        --seg: #22262e;
+        --text: #eceef2;
+        --muted: #a3aab5;
+        --line: #2a2f37;
+        --strong: #eceef2;
+        --on-strong: #0e1013;
+        --accent: #7ea6ff;
+        --needs: #ff8a80;
+        --warn-bg: #2d2511; --warn-text: #f3d98b; --warn-line: #574719;
+        --hyrox-bg: #3a3112;   --hyrox: #f4d97a;
+        --womens-bg: #2e2650;  --womens: #cfc0ff;
+        --kids-bg: #163823;    --kids: #a3e2b8;
+        --kodafit-bg: #43182f; --kodafit: #f6add2;
+        --comp-bg: #43250f;    --comp: #f8be8f;
+        --opengym-bg: #262b33; --opengym: #c6ccd5;
+        --kratos-bg: #441a1a;  --kratos: #f6a8a8;
+      }
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
 
-    :root {
-      --bg: #1a1a2e;
-      --panel: #16213e;
-      --card: #1f2b4d;
-      --line: #2c3a63;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --accent: #60a5fa;
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.4;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      padding: 16px;
       -webkit-text-size-adjust: 100%;
     }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-    .wrap { max-width: 1400px; margin: 0 auto; }
+    .page { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
 
     /* ── Header ── */
-    .top {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px 20px;
-      margin-bottom: 16px;
+    .brand {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted);
     }
-    h1 { font-size: 1.5rem; color: #fff; line-height: 1.2; }
-    .sub { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
-    .sub a { color: var(--accent); text-decoration: none; }
-    .sub a:hover { text-decoration: underline; }
+    h1 { font-size: 28px; line-height: 1.15; margin-top: 2px; }
 
-    .weeknav { display: flex; align-items: center; gap: 10px; }
-    .navbtn {
-      width: 44px; height: 44px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: #fff;
-      font-size: 1.4rem;
-      cursor: pointer;
+    .week {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin: 18px 0 14px;
     }
-    .navbtn:hover:not(:disabled) { border-color: var(--accent); }
-    .navbtn:disabled { opacity: 0.35; cursor: default; }
-    .weeklabel { text-align: center; min-width: 190px; }
-    #weekTitle { font-weight: 700; font-size: 1.1rem; }
-    .status { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
-    .status button {
-      background: none; border: none; color: var(--accent);
-      font: inherit; cursor: pointer; padding: 0 2px;
+    .arrow {
+      flex: none; width: 46px; height: 46px;
+      border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+      font-size: 24px; line-height: 1;
+    }
+    .arrow:disabled { opacity: 0.35; cursor: default; }
+    .week-text { text-align: center; }
+    .week-rel {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); min-height: 18px;
+    }
+    .week-dates { font-size: 20px; font-weight: 700; }
+
+    /* ── Full schedule / My classes ── */
+    .views {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+      background: var(--seg); padding: 4px; border-radius: 13px;
+    }
+    .views button {
+      border: 0; background: transparent; border-radius: 10px;
+      padding: 10px 8px; font-weight: 600; color: var(--muted);
+    }
+    .views button[aria-selected="true"] {
+      background: var(--surface); color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     }
 
     .notice {
-      background: #3b2f12;
-      border: 1px solid #a16207;
-      color: #fde68a;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 14px;
-      font-size: 0.95rem;
+      background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line);
+      border-radius: 12px; padding: 10px 14px; font-size: 15px; margin-top: 14px;
     }
-    .notice button {
-      background: none; border: none; color: #fff; text-decoration: underline;
-      font: inherit; cursor: pointer; margin-left: 6px;
-    }
+    .notice button { border: 0; background: none; text-decoration: underline; font-weight: 600; margin-left: 4px; }
 
-    /* ── Filters ── */
-    .controls {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
+    /* ── Day picker + class filter ── */
+    .daybar {
+      position: sticky; top: 0; z-index: 2;
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;
+      background: var(--bg); padding: 14px 0 10px;
     }
-    .ctl-row + .ctl-row { margin-top: 12px; }
-    .coach-select {
-      display: none;
-      width: 100%;
-      min-height: 46px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--card);
-      color: #fff;
-      font-size: 1rem;
+    .dbtn {
+      border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+      padding: 6px 0 7px; text-align: center;
     }
-    .ctl-label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
+    .dbtn .dn { display: block; font-size: 12px; color: var(--muted); }
+    .dbtn .dd { display: block; font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .dbtn.is-today .dd::after {
+      content: ""; display: block; width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); margin: 2px auto 0;
     }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dbtn[aria-selected="true"] { background: var(--strong); border-color: var(--strong); color: var(--on-strong); }
+    .dbtn[aria-selected="true"] .dn { color: inherit; opacity: 0.75; }
+    .dbtn[aria-selected="true"].is-today .dd::after { background: var(--on-strong); }
+
+    .filters {
+      display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+      margin: 0 -16px; padding: 2px 16px 4px;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    @media (min-width: 560px) {   /* room to wrap instead of scrolling sideways */
+      .filters { flex-wrap: wrap; margin: 0; padding: 2px 0 4px; }
+    }
     .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 36px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: var(--card);
-      color: var(--text);
-      font-size: 0.92rem;
-      cursor: pointer;
-      user-select: none;
+      flex: none; white-space: nowrap;
+      border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+      padding: 7px 14px; font-size: 15px;
     }
-    .chip:hover { border-color: #4b5d91; }
-    .chip[aria-pressed="true"] {
-      background: #fff;
-      color: #111827;
-      border-color: #fff;
-      font-weight: 700;
-    }
-    .dot {
-      width: 11px; height: 11px;
-      border-radius: 50%;
-      flex: none;
-      box-shadow: 0 0 0 1.5px rgba(255,255,255,0.55);
-    }
-    .chip[aria-pressed="true"] .dot { box-shadow: 0 0 0 1.5px rgba(0,0,0,0.35); }
-    .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+    .chip[aria-pressed="true"] { background: var(--strong); border-color: var(--strong); color: var(--on-strong); font-weight: 600; }
 
-    /* ── Coach summary ── */
-    .mine {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 16px;
-      background: var(--panel);
-      border: 1px solid var(--accent);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
+    /* ── Class lists ── */
+    .day-title { font-size: 22px; margin: 20px 0 2px; display: flex; align-items: center; gap: 10px; }
+    .day-note { color: var(--muted); font-size: 15px; }
+    .badge {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent); border: 1.5px solid currentColor; border-radius: 999px; padding: 1px 8px;
     }
-    .mine-name { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .mine-name .dot { width: 14px; height: 14px; }
-    .mine-stats { color: var(--muted); font-size: 0.92rem; flex: 1; }
-    .mine-stats b { color: var(--text); }
-    .linkbtn {
-      background: none; border: 1px solid var(--line); color: var(--text);
-      border-radius: 8px; padding: 7px 12px; font: inherit; font-size: 0.88rem; cursor: pointer;
+    .block h3 {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--muted); margin: 22px 4px 8px;
     }
-    .linkbtn:hover { border-color: var(--accent); }
+    .block h3.dayhead {
+      font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .rows { list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .row {
+      display: grid; grid-template-columns: 5em minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+      padding: 12px 16px; border-top: 1px solid var(--line);
+    }
+    .row:first-child { border-top: 0; }
+    .row.same { border-top: 0; padding-top: 0; }   /* another class at the same time */
+    .t { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .c { min-width: 0; }
+    .sub { display: block; font-size: 14px; color: var(--muted); margin-top: 1px; }
+    .who { text-align: right; font-weight: 600; max-width: 10.5em; overflow-wrap: anywhere; }
+    .who.muted { font-weight: 400; color: var(--muted); font-size: 15px; }
+    .who.needs { color: var(--needs); }
+    .row.past { opacity: 0.45; }
+    .row.canceled .t, .row.canceled .c { text-decoration: line-through; }
 
-    /* ── Day tabs (phones) ── */
-    .daytabs {
-      display: none;
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      background: var(--bg);
-      padding: 6px 0 10px;
-      gap: 6px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .daytabs::-webkit-scrollbar { display: none; }
-    .daytab {
-      flex: 1 0 auto;
-      min-width: 46px;
-      padding: 7px 4px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: var(--text);
-      font: inherit;
-      text-align: center;
-      cursor: pointer;
-    }
-    .daytab .dn { display: block; font-size: 0.78rem; color: var(--muted); }
-    .daytab .dd { display: block; font-size: 1.05rem; font-weight: 700; }
-    .daytab.today { border-color: var(--accent); }
-    .daytab[aria-selected="true"] { background: #fff; color: #111827; border-color: #fff; }
-    .daytab[aria-selected="true"] .dn { color: #374151; }
+    .tag { display: inline-block; border-radius: 999px; padding: 1px 10px; font-size: 15px; font-weight: 600; }
+    .tag-hyrox   { background: var(--hyrox-bg);   color: var(--hyrox); }
+    .tag-womens  { background: var(--womens-bg);  color: var(--womens); }
+    .tag-kids    { background: var(--kids-bg);    color: var(--kids); }
+    .tag-kodafit { background: var(--kodafit-bg); color: var(--kodafit); }
+    .tag-comp    { background: var(--comp-bg);    color: var(--comp); }
+    .tag-opengym, .tag-other { background: var(--opengym-bg); color: var(--opengym); }
+    .tag-kratos  { background: var(--kratos-bg);  color: var(--kratos); }
 
-    /* ── Week board ── */
-    .board {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 10px;
-      align-items: start;
-    }
-    .day {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px;
-      min-height: 120px;
-    }
-    .day.today { border-color: var(--accent); }
-    .day-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 2px 4px 8px;
-    }
-    .day-name { font-weight: 700; font-size: 1rem; }
-    .day-date { color: var(--muted); font-size: 0.85rem; }
-    .day-note {
-      font-size: 0.78rem; color: #fde68a;
-      padding: 0 4px 8px;
-    }
-    .today-pill {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-      background: var(--accent); color: #0b1220; border-radius: 999px; padding: 1px 7px;
-    }
-    .empty-day { color: var(--muted); font-size: 0.85rem; padding: 6px 4px; }
+    /* ── My classes ── */
+    .me-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 20px; }
+    .me-name { font-size: 24px; font-weight: 700; line-height: 1.2; }
+    .me-sub { color: var(--muted); font-size: 15px; margin-top: 2px; }
+    .link { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 6px 0; }
+    .off { color: var(--muted); font-size: 15px; margin: 18px 4px 0; }
 
-    .card {
-      background: var(--card);
-      border-radius: 9px;
-      border-left: 5px solid var(--tc, #cbd5e1);
-      padding: 7px 9px 8px;
-      margin-bottom: 6px;
+    .picker { margin-top: 22px; }
+    .picker h2 { font-size: 22px; }
+    .hint { color: var(--muted); font-size: 15px; margin: 4px 0 16px; }
+    .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .name-btn {
+      border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+      padding: 13px 10px; font-weight: 600; text-align: center;
     }
-    .c-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 3px 6px; }
-    .c-time { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
-    .tag {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      color: #0b1220;
-      background: var(--tc, #cbd5e1);
-      border-radius: 999px;
-      padding: 2px 8px;
-      white-space: nowrap;
-    }
-    .c-who { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 5px; }
-    .who {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 0.95rem;
-      background: none; border: none; color: inherit; font-family: inherit;
-      cursor: pointer; padding: 0;
-    }
-    .who:hover { text-decoration: underline; }
-    .who.me { font-weight: 800; }
-    .no-coach { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
-    .card.canceled { opacity: 0.55; }
-    .card.canceled .c-time, .card.canceled .who { text-decoration: line-through; }
+    .name-btn:hover { border-color: var(--muted); }
 
-    .message {
-      grid-column: 1 / -1;
-      text-align: center;
-      color: var(--muted);
-      padding: 40px 16px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 12px;
+    .empty {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+      padding: 28px 18px; margin-top: 20px; text-align: center; color: var(--muted);
     }
-    .message strong { display: block; color: var(--text); font-size: 1.1rem; margin-bottom: 6px; }
-    .message button {
-      margin-top: 12px; background: var(--accent); color: #0b1220; border: none;
-      border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 700; cursor: pointer;
+    .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 4px; }
+    .btn {
+      margin-top: 14px; border: 0; border-radius: 10px; padding: 10px 16px;
+      background: var(--strong); color: var(--on-strong); font-weight: 600;
     }
 
-    footer { color: var(--muted); font-size: 0.82rem; text-align: center; margin: 24px 0 8px; }
+    footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 14px; }
+    footer button { border: 0; background: none; color: var(--accent); font-weight: 600; }
+    footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
 
-    /* Narrow screens: one day at a time (everyone), or the coach's whole week stacked */
-    @media (max-width: 899px) {
-      body { padding: 12px; }
-      h1 { font-size: 1.3rem; }
-      .top { flex-direction: column; align-items: stretch; }
-      .weeknav { justify-content: space-between; }
-      .daytabs { display: flex; gap: 4px; }
-      .daytab { flex: 1 1 0; min-width: 0; }
-      #coachChips { display: none; }
-      .coach-select { display: block; }
-      #typeChips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px; }
-      #typeChips::-webkit-scrollbar { display: none; }
-      #typeChips .chip { flex: none; }
-      .board { display: block; }
-      .board .day { margin-bottom: 10px; }
-      .board:not(.all-days) .day:not(.active) { display: none; }
-      .daytabs.hide { display: none; }
-      .card { padding: 9px 11px 10px; }
-      .c-time { font-size: 1.02rem; }
-      .tag { font-size: 0.75rem; }
-      .who { font-size: 1.02rem; }
+    @media (max-width: 420px) {
+      .names { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .row { padding: 12px 14px; gap: 4px 10px; grid-template-columns: 4.7em minmax(0, 1fr) auto; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <div>
-        <h1>Koda Coaching Schedule</h1>
-        <div class="sub">Tap your name to see your week · <a href="../">Submit availability</a></div>
-      </div>
-      <div class="weeknav">
-        <button class="navbtn" id="prevWeek" aria-label="Previous week">&#8249;</button>
-        <div class="weeklabel">
-          <div id="weekTitle">Loading…</div>
-          <div class="status" id="status"></div>
-        </div>
-        <button class="navbtn" id="nextWeek" aria-label="Next week">&#8250;</button>
-      </div>
+  <div class="page">
+    <header>
+      <div class="brand">Koda CrossFit</div>
+      <h1>Coaching Schedule</h1>
     </header>
 
-    <div id="notice" class="notice" hidden></div>
+    <nav class="week" aria-label="Week">
+      <button class="arrow" id="prevWeek" aria-label="Previous week" disabled>&#8249;</button>
+      <div class="week-text">
+        <div class="week-rel" id="weekRel"></div>
+        <div class="week-dates" id="weekDates">Loading…</div>
+      </div>
+      <button class="arrow" id="nextWeek" aria-label="Next week" disabled>&#8250;</button>
+    </nav>
 
-    <section class="controls" id="controls" hidden>
-      <div class="ctl-row">
-        <label class="ctl-label" for="coachSelect">Coach</label>
-        <div class="chips" id="coachChips"></div>
-        <select id="coachSelect" class="coach-select"></select>
-      </div>
-      <div class="ctl-row">
-        <div class="ctl-label">Classes</div>
-        <div class="chips" id="typeChips"></div>
-      </div>
+    <div class="views" role="tablist" aria-label="View">
+      <button role="tab" id="tabDay" aria-selected="true">Full schedule</button>
+      <button role="tab" id="tabMine" aria-selected="false">My classes</button>
+    </div>
+
+    <div class="notice" id="notice" hidden></div>
+
+    <section id="dayView">
+      <div class="daybar" id="dayTabs" role="tablist" aria-label="Day" hidden></div>
+      <div class="filters" id="filters" aria-label="Class type" hidden></div>
+      <div id="dayList"><div class="empty">Loading the schedule…</div></div>
     </section>
 
-    <section class="mine" id="mine" hidden></section>
-    <nav class="daytabs" id="dayTabs" role="tablist" aria-label="Day"></nav>
-    <main class="board" id="board">
-      <div class="message"><strong>Loading the schedule…</strong>This takes a couple of seconds.</div>
-    </main>
+    <section id="mineView" hidden>
+      <div id="mineBody"><div class="empty">Loading the schedule…</div></div>
+    </section>
 
-    <footer>Pulled live from the Koda schedule sheet, so changes show up when you refresh.</footer>
+    <footer>
+      <span id="status"></span>
+      <div style="margin-top:6px"><a href="../">Submit your availability</a></div>
+    </footer>
   </div>
 
 <script>
@@ -344,27 +268,30 @@
   var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk14st_Ix70GM0T2I8aKRU9HRBlotk_Up-Ikh5MHxYuUdDj4xIvj36r8lvQh15gPvm/exec";
 
   var TYPES = {
-    crossfit: { label: "CrossFit",     color: "#60a5fa" },
-    hyrox:    { label: "Hyrox",        color: "#facc15" },
-    kodafit:  { label: "KodaFit",      color: "#f472b6" },
-    womens:   { label: "Women's",      color: "#c4b5fd" },
-    kids:     { label: "Kids & Teens", color: "#4ade80" },
-    comp:     { label: "Comp Class",   color: "#fb923c" },
-    opengym:  { label: "Open Gym",     color: "#94a3b8" },
-    kratos:   { label: "Kratos",       color: "#f87171" },
-    other:    { label: "Other",        color: "#cbd5e1" }
+    crossfit: { label: "CrossFit" },
+    hyrox:    { label: "Hyrox" },
+    kodafit:  { label: "KodaFit" },
+    womens:   { label: "Women's" },
+    kids:     { label: "Kids & Teens" },
+    comp:     { label: "Comp Class" },
+    opengym:  { label: "Open Gym" },
+    kratos:   { label: "Kratos" },
+    other:    { label: "Other" }
   };
   var TYPE_ORDER = ["crossfit", "hyrox", "kodafit", "womens", "kids", "comp", "opengym", "kratos", "other"];
   var DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   var DAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var NEEDS_COACH = /^(uncovered|tbd|tba|needs? (a )?coach|no coach)$/i;
 
   var state = {
     data: null,          // raw backend response
     week: null,          // parsed week
-    coach: null,         // selected coach name
-    types: [],           // selected class types (empty = all)
-    day: null,           // active day index on phones
+    view: "day",         // "day" = full schedule, "mine" = one coach's week
+    me: null,            // name chosen under "My classes"
+    picking: false,      // showing the name list
+    day: null,           // selected day in the full schedule
+    types: [],           // class-type filter (empty = all)
     loading: false,
     fetchedAt: 0,
     explicitWeek: false  // week chosen with the arrows / ?week= (kept in the URL)
@@ -373,7 +300,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  // ── Small storage helpers (per-viewer conveniences only) ──
+  // ── Per-device conveniences (name, last view, cached weeks) ──
   function store(key, val) {
     try { localStorage.setItem("koda-sched:" + key, JSON.stringify(val)); } catch (e) {}
   }
@@ -391,12 +318,21 @@
   }
   function addDays(s, n) { var d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); }
   function mondayOf(s) { var wd = parseYmd(s).getDay(); return addDays(s, wd === 0 ? -6 : 1 - wd); }
-  function weekTitle(mon) {
+  function today() { return ymd(new Date()); }
+  function monthDay(s) { var d = parseYmd(s); return MONTHS[d.getMonth()] + " " + d.getDate(); }
+  function weekDates(mon) {
     var a = parseYmd(mon), b = parseYmd(addDays(mon, 6));
-    var left = MONTHS[a.getMonth()] + " " + a.getDate();
-    var right = (a.getMonth() === b.getMonth() ? "" : MONTHS[b.getMonth()] + " ") + b.getDate();
-    return "Week of " + left + " – " + right;
+    return MONTHS[a.getMonth()] + " " + a.getDate() + " – " +
+      (a.getMonth() === b.getMonth() ? "" : MONTHS[b.getMonth()] + " ") + b.getDate();
   }
+  function weekRel(mon) {
+    var cur = mondayOf(today());
+    if (mon === cur) return "This week";
+    if (mon === addDays(cur, 7)) return "Next week";
+    if (mon === addDays(cur, -7)) return "Last week";
+    return "";
+  }
+  function nowMinutes() { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
 
   // ── Parsing the sheet block ──
   // rows[i] = [B week date, C class time, D-H Mon-Fri, I Sat time, J Sat coach, K Sunday]
@@ -421,14 +357,9 @@
   }
   function findTime(s) {
     var r = TIME_RANGE.exec(s);
-    if (r) {
-      var apStart = r[3] || r[6];
-      var start = minutes(r[1], r[2], apStart), end = minutes(r[4], r[5], r[6]);
-      var startText = apStart.toUpperCase() === r[6].toUpperCase() ? fmt(start).replace(/ (AM|PM)$/, "") : fmt(start);
-      return { start: start, text: startText + "–" + fmt(end) };   // "1:30–3:00 PM"
-    }
+    if (r) return { start: minutes(r[1], r[2], r[3] || r[6]), end: minutes(r[4], r[5], r[6]) };
     var o = TIME_ONE.exec(s);
-    if (o) { var t = minutes(o[1], o[2], o[3]); return { start: t, text: fmt(t) }; }
+    if (o) return { start: minutes(o[1], o[2], o[3]), end: null };
     return null;
   }
   function detectType(s) {
@@ -463,12 +394,14 @@
     // the cell's own time wins ("Jamie 5:00 PM"), unless it's the same start as the row's range
     var cellTime = findTime(text), rowTime = findTime(label);
     var time = cellTime && !(rowTime && rowTime.start === cellTime.start) ? cellTime : (rowTime || cellTime);
+    var names = namesIn(text);
     return {
       type: type,
       title: titleFor(type, detectType(joined) ? joined : label),
       start: time ? time.start : null,
-      timeText: time ? time.text : "",
-      coaches: namesIn(text),
+      end: time ? time.end : null,
+      coaches: names.filter(function (n) { return !NEEDS_COACH.test(n); }),
+      needsCoach: names.some(function (n) { return NEEDS_COACH.test(n); }),
       canceled: /cancel+ed/i.test(joined)
     };
   }
@@ -502,24 +435,19 @@
       });
     });
 
-    // Coach colors: that week's legend in col A, then any other names found
-    var colors = {};
-    (data.legend || []).forEach(function (l) { colors[l.name.trim().toLowerCase()] = l.bg; });
-    var coaches = {};
+    // Names for the "Who are you?" list: that week's legend (col A) plus everyone on the schedule
+    var roster = {};
+    (data.legend || []).forEach(function (l) { var n = l.name.trim(); if (n) roster[n.toLowerCase()] = n; });
+    var filled = 0;
     days.forEach(function (day) {
       day.classes.forEach(function (c) {
-        c.coaches.forEach(function (n) {
-          var k = n.toLowerCase();
-          if (!coaches[k]) coaches[k] = { name: n, color: colors[k] || "#64748b", count: 0 };
-          if (!c.canceled) coaches[k].count++;
-        });
+        if (c.coaches.length) filled++;
+        c.coaches.forEach(function (n) { roster[n.toLowerCase()] = n; });
       });
     });
     // A full week has ~120 classes; the blank template for a new week already carries a few
     // (KodaFit, Comp Class), so treat a week as posted once a good share is filled in
-    var filled = 0;
-    days.forEach(function (day) { day.classes.forEach(function (c) { if (c.coaches.length) filled++; }); });
-    return { monday: data.week, days: days, coaches: coaches, staffed: filled > 0, posted: filled >= 30 };
+    return { monday: data.week, days: days, roster: roster, staffed: filled > 0, posted: filled >= 30 };
   }
 
   // ── Rendering ──
@@ -528,136 +456,150 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
     });
   }
-  function coachKey() { return state.coach ? state.coach.toLowerCase() : null; }
-  function isNarrow() { return window.matchMedia("(max-width: 899px)").matches; }
-  function visible(c) {
-    if (state.types.length && state.types.indexOf(c.type) < 0) return false;
-    if (state.coach) {
-      var k = coachKey();
-      if (!c.coaches.some(function (n) { return n.toLowerCase() === k; })) return false;
+  function joinNames(list) {
+    return list.length < 2 ? (list[0] || "") : list.slice(0, -1).join(", ") + " & " + list[list.length - 1];
+  }
+  function classLabel(c) {
+    var html = c.type === "crossfit" ? "CrossFit" : '<span class="tag tag-' + c.type + '">' + esc(c.title) + '</span>';
+    if (c.end !== null) html += '<span class="sub">until ' + fmt(c.end) + '</span>';
+    return html;
+  }
+  function rowHtml(c, showTime, past, meKey) {
+    var who;
+    if (c.canceled) who = '<span class="who muted">Canceled</span>';
+    else if (meKey) {
+      var others = c.coaches.filter(function (n) { return n.toLowerCase() !== meKey; });
+      who = '<span class="who muted">' + (others.length ? "with " + esc(joinNames(others)) : "") + '</span>';
     }
-    return true;
+    else if (c.needsCoach) who = '<span class="who needs">Needs a coach</span>';
+    else who = '<span class="who">' + esc(joinNames(c.coaches)) + '</span>';
+    return '<li class="row' + (showTime ? "" : " same") + (past ? " past" : "") + (c.canceled ? " canceled" : "") + '">' +
+      '<span class="t">' + (showTime && c.start !== null ? fmt(c.start) : "") + '</span>' +
+      '<span class="c">' + classLabel(c) + '</span>' + who + '</li>';
+  }
+  function isPast(c, date) {
+    var t = today();
+    if (date < t) return true;
+    return date === t && c.start !== null && c.start + 60 <= nowMinutes();
   }
 
-  function renderControls() {
+  // Morning / Midday / Afternoon & Evening, with classes at the same time under one time
+  function groupOf(c) { return c.start === null ? 0 : c.start < 570 ? 1 : c.start < 900 ? 2 : 3; }
+  function groupedList(items, day) {
+    var names = [day.key === "Sun" ? "Sunday Open Gym" : "No set time", "Morning", "Midday", "Afternoon & Evening"];
+    var html = "", group = -1, lastStart = null;
+    items.forEach(function (c) {
+      var g = groupOf(c);
+      if (g !== group) {
+        if (group !== -1) html += "</ol></section>";
+        html += '<section class="block"><h3>' + names[g] + '</h3><ol class="rows">';
+        group = g; lastStart = null;
+      }
+      var showTime = c.start === null || c.start !== lastStart;
+      lastStart = c.start;
+      html += rowHtml(c, showTime, day.date === today() && isPast(c, day.date), null);
+    });
+    return html + "</ol></section>";
+  }
+
+  function notPostedHtml() {
+    return '<div class="empty"><strong>Not posted yet</strong>This week’s schedule isn’t up yet. Check back soon.' +
+      (state.week.monday !== mondayOf(today()) ? '<br><button class="btn" id="goCurrent">Go to this week</button>' : "") +
+      '</div>';
+  }
+
+  function renderDayView() {
     var w = state.week;
-    var names = Object.keys(w.coaches).map(function (k) { return w.coaches[k]; })
-      .sort(function (a, b) { return a.name.localeCompare(b.name); });
-    $("coachChips").innerHTML = names.map(function (c) {
-      var on = coachKey() === c.name.toLowerCase();
-      return '<button class="chip" data-coach="' + esc(c.name) + '" aria-pressed="' + on + '">' +
-        '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + '</button>';
+    if (!w.staffed) {
+      $("dayTabs").hidden = true; $("filters").hidden = true;
+      $("dayList").innerHTML = notPostedHtml();
+      return;
+    }
+    var t = today();
+    if (state.day === null) {
+      var ti = w.days.map(function (d) { return d.date; }).indexOf(t);
+      state.day = ti >= 0 ? ti : 0;
+    }
+    $("dayTabs").hidden = false;
+    $("dayTabs").innerHTML = w.days.map(function (d, i) {
+      return '<button class="dbtn' + (d.date === t ? " is-today" : "") + '" role="tab" data-day="' + i +
+        '" aria-selected="' + (i === state.day) + '" aria-label="' + d.long + ", " + monthDay(d.date) + '">' +
+        '<span class="dn">' + d.key + '</span><span class="dd">' + parseYmd(d.date).getDate() + '</span></button>';
     }).join("");
-    var sel = state.coach && !w.coaches[coachKey()] ? [{ name: state.coach }] : [];
-    $("coachSelect").innerHTML = '<option value="">Everyone — choose your name</option>' +
-      sel.concat(names).map(function (c) {
-        return '<option value="' + esc(c.name) + '"' + (coachKey() === c.name.toLowerCase() ? " selected" : "") + '>' +
-          esc(c.name) + '</option>';
-      }).join("");
 
     var present = {};
     w.days.forEach(function (d) { d.classes.forEach(function (c) { present[c.type] = true; }); });
     var chips = ['<button class="chip" data-type="" aria-pressed="' + (state.types.length === 0) + '">All classes</button>'];
-    TYPE_ORDER.forEach(function (t) {
-      if (!present[t]) return;
-      chips.push('<button class="chip" data-type="' + t + '" aria-pressed="' + (state.types.indexOf(t) >= 0) + '">' +
-        '<span class="swatch" style="background:' + TYPES[t].color + '"></span>' + TYPES[t].label + '</button>');
+    TYPE_ORDER.forEach(function (ty) {
+      if (present[ty]) chips.push('<button class="chip" data-type="' + ty + '" aria-pressed="' +
+        (state.types.indexOf(ty) >= 0) + '">' + TYPES[ty].label + '</button>');
     });
-    $("typeChips").innerHTML = chips.join("");
-    $("controls").hidden = false;
+    $("filters").hidden = false;
+    $("filters").innerHTML = chips.join("");
+
+    var day = w.days[state.day];
+    var items = day.classes.filter(function (c) { return !state.types.length || state.types.indexOf(c.type) >= 0; });
+    var html = '<h2 class="day-title">' + day.long + ", " + monthDay(day.date) +
+      (day.date === t ? ' <span class="badge">Today</span>' : "") + '</h2>' +
+      (day.note ? '<p class="day-note">' + esc(day.note) + '</p>' : "");
+    if (!items.length) {
+      var picked = state.types.map(function (ty) { return TYPES[ty].label; }).join(" or ");
+      html += '<div class="empty">' + (state.types.length
+        ? "No " + esc(picked) + " classes on " + day.long + '.<br><button class="btn" data-type="">Show all classes</button>'
+        : "No classes on " + day.long + ".") + '</div>';
+    } else {
+      html += groupedList(items, day);
+    }
+    $("dayList").innerHTML = html;
   }
 
-  function renderMine() {
-    var box = $("mine");
-    if (!state.coach) { box.hidden = true; return; }
-    var info = state.week.coaches[coachKey()];
-    var byType = {}, total = 0;
-    state.week.days.forEach(function (d) {
-      d.classes.forEach(function (c) {
-        if (c.canceled || !c.coaches.some(function (n) { return n.toLowerCase() === coachKey(); })) return;
-        total++; byType[c.type] = (byType[c.type] || 0) + 1;
+  function renderMineView() {
+    var w = state.week, body = $("mineBody");
+    if (!w.staffed) { body.innerHTML = notPostedHtml(); return; }
+    if (!state.me || state.picking) {
+      var names = Object.keys(w.roster).map(function (k) { return w.roster[k]; })
+        .sort(function (a, b) { return a.localeCompare(b); });
+      body.innerHTML = '<div class="picker"><h2>Who are you?</h2>' +
+        '<p class="hint">Tap your name to see your classes. This device will remember it.</p>' +
+        '<div class="names">' + names.map(function (n) {
+          return '<button class="name-btn" data-me="' + esc(n) + '">' + esc(n) + '</button>';
+        }).join("") + '</div>' +
+        (state.me ? '<div style="text-align:center;margin-top:12px"><button class="link" id="cancelPick">Cancel</button></div>' : "") +
+        '</div>';
+      return;
+    }
+    var key = state.me.toLowerCase(), t = today(), total = 0, off = [], days = "";
+    w.days.forEach(function (d) {
+      var mine = d.classes.filter(function (c) {
+        return c.coaches.some(function (n) { return n.toLowerCase() === key; });
       });
+      if (!mine.length) { off.push(d.key); return; }
+      total += mine.filter(function (c) { return !c.canceled; }).length;
+      days += '<section class="block"><h3 class="dayhead">' + d.long + ", " + monthDay(d.date) +
+        (d.date === t ? ' <span class="badge">Today</span>' : "") + '</h3><ol class="rows">' +
+        mine.map(function (c) { return rowHtml(c, true, isPast(c, d.date), key); }).join("") +
+        '</ol></section>';
     });
-    var parts = TYPE_ORDER.filter(function (t) { return byType[t]; })
-      .map(function (t) { return byType[t] + " " + TYPES[t].label; });
-    box.innerHTML =
-      '<div class="mine-name"><span class="dot" style="background:' + esc(info ? info.color : "#64748b") + '"></span>' +
-      esc(state.coach) + '</div>' +
-      '<div class="mine-stats">' + (info
-        ? '<b>' + total + ' class' + (total === 1 ? "" : "es") + '</b> this week' + (parts.length > 1 ? " · " + esc(parts.join(", ")) : "")
-        : "Not on the schedule this week") + '</div>' +
-      '<button class="linkbtn" id="showAll">Show everyone</button>';
-    box.hidden = false;
+    body.innerHTML =
+      '<div class="me-head"><div><div class="me-name">' + esc(state.me) + '</div>' +
+      '<div class="me-sub">' + (total ? total + (total === 1 ? " class" : " classes") : "No classes") +
+      " · " + weekDates(w.monday) + '</div></div>' +
+      '<button class="link" id="changeMe">Not you?</button></div>' +
+      (total
+        ? days + (off.length ? '<p class="off">Off: ' + off.join(", ") + '</p>' : "")
+        : '<div class="empty">No classes on the schedule this week.</div>');
   }
 
-  function cardHtml(c) {
-    var tc = TYPES[c.type] ? TYPES[c.type].color : TYPES.other.color;
-    var who = c.coaches.length
-      ? '<div class="c-who">' + c.coaches.map(function (n) {
-          var info = state.week.coaches[n.toLowerCase()];
-          var me = coachKey() === n.toLowerCase();
-          return '<button class="who' + (me ? " me" : "") + '" data-coach="' + esc(n) + '">' +
-            '<span class="dot" style="background:' + esc(info ? info.color : "#64748b") + '"></span>' + esc(n) + '</button>';
-        }).join("") + '</div>'
-      : (c.canceled ? '<div class="no-coach">Canceled</div>' : "");
-    return '<div class="card' + (c.canceled ? " canceled" : "") + '" style="--tc:' + tc + '">' +
-      '<div class="c-top"><span class="c-time">' + esc(c.timeText || "") + '</span>' +
-      '<span class="tag">' + esc(c.title) + '</span></div>' + who + '</div>';
-  }
-
-  function renderBoard() {
-    var w = state.week, board = $("board"), today = ymd(new Date());
-    if (!w.staffed) {
-      board.className = "board";
-      board.innerHTML = '<div class="message"><strong>This week isn’t posted yet</strong>' +
-        'Check back soon, or look at another week with the arrows.' +
-        (w.monday !== mondayOf(today) ? '<br><button id="goCurrent">Go to this week</button>' : "") + '</div>';
-      $("dayTabs").innerHTML = ""; $("dayTabs").classList.add("hide");
-      return;
-    }
-    if (state.day === null) {
-      var ti = w.days.map(function (d) { return d.date; }).indexOf(today);
-      state.day = ti >= 0 ? ti : 0;
-    }
-    var allDays = !!state.coach;   // a coach's own week shows every day, stacked on phones
-    board.className = "board" + (allDays ? " all-days" : "");
-    $("dayTabs").classList.toggle("hide", allDays);
-
-    $("dayTabs").innerHTML = w.days.map(function (d, i) {
-      return '<button class="daytab' + (d.date === today ? " today" : "") + '" role="tab" data-day="' + i +
-        '" aria-selected="' + (i === state.day) + '"><span class="dn">' + d.key + '</span>' +
-        '<span class="dd">' + parseYmd(d.date).getDate() + '</span></button>';
-    }).join("");
-
-    var narrow = isNarrow();
-    var anyShown = w.days.some(function (d) { return d.classes.some(visible); });
-    if (!anyShown) {
-      board.innerHTML = state.coach && !w.coaches[coachKey()]
-        ? '<div class="message"><strong>' + esc(state.coach) + ' isn’t on the schedule this week</strong>' +
-          '<button id="showAll">Show everyone</button></div>'
-        : '<div class="message"><strong>No classes match</strong>Turn on more class types above.</div>';
-      $("dayTabs").classList.add("hide");
-      return;
-    }
-    board.innerHTML = w.days.map(function (d, i) {
-      var shown = d.classes.filter(visible);
-      if (allDays && narrow && !shown.length) return "";
-      var dt = parseYmd(d.date);
-      return '<section class="day' + (i === state.day ? " active" : "") + (d.date === today ? " today" : "") + '">' +
-        '<div class="day-head"><span class="day-name">' + (narrow ? d.long : d.key) + '</span>' +
-        (d.date === today ? '<span class="today-pill">Today</span>' : '<span class="day-date">' + MONTHS[dt.getMonth()] + " " + dt.getDate() + '</span>') +
-        '</div>' + (d.note ? '<div class="day-note">' + esc(d.note) + '</div>' : "") +
-        (shown.length ? shown.map(cardHtml).join("") : '<div class="empty-day">' + (state.coach ? "Off" : "No classes") + '</div>') +
-        '</section>';
-    }).join("");
-  }
-
-  function renderHeader() {
+  function renderChrome() {
     var d = state.data;
-    $("weekTitle").textContent = d ? weekTitle(d.week) : "Koda Coaching Schedule";
-    var weeks = d ? d.weeks || [] : [];
+    $("weekRel").textContent = d ? weekRel(d.week) : "";
+    $("weekDates").textContent = d ? weekDates(d.week) : "Loading…";
     $("prevWeek").disabled = !d;
-    $("nextWeek").disabled = !d || !weeks.some(function (w) { return w > d.week; });
+    $("nextWeek").disabled = !d || !(d.weeks || []).some(function (x) { return x > d.week; });
+    $("tabDay").setAttribute("aria-selected", state.view === "day");
+    $("tabMine").setAttribute("aria-selected", state.view === "mine");
+    $("dayView").hidden = state.view !== "day";
+    $("mineView").hidden = state.view !== "mine";
     var when = state.fetchedAt ? new Date(state.fetchedAt) : null;
     $("status").innerHTML = state.loading
       ? "Updating…"
@@ -666,18 +608,16 @@
   }
 
   function render() {
-    renderHeader();
+    renderChrome();
     if (!state.week) return;
-    renderControls();
-    renderMine();
-    renderBoard();
+    if (state.view === "day") renderDayView(); else renderMineView();
   }
 
   // ── Data ──
   function syncUrl() {
     var p = new URLSearchParams();
     if (state.data && state.explicitWeek) p.set("week", state.data.week);
-    if (state.coach) p.set("coach", state.coach);
+    if (state.view === "mine" && state.me) p.set("coach", state.me);
     var qs = p.toString();
     history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
   }
@@ -692,7 +632,7 @@
     opts = opts || {};
     var my = ++seq;
     state.loading = true;
-    renderHeader();
+    renderChrome();
     var cached = recall("week:" + date);
     if (cached && cached.data) apply(cached.data, cached.at, date, opts, my, true);
     fetch(SCRIPT_URL + "?action=liveSchedule&week=" + encodeURIComponent(date))
@@ -707,13 +647,14 @@
       .catch(function (err) {
         if (my !== seq) return;
         state.loading = false;
-        renderHeader();
+        renderChrome();
         if (!state.week) {
-          $("board").innerHTML = '<div class="message"><strong>Couldn’t load the schedule</strong>' +
-            esc(String(err.message || err)) + '<br><button id="retry">Try again</button></div>';
+          var box = state.view === "day" ? $("dayList") : $("mineBody");
+          box.innerHTML = '<div class="empty"><strong>Couldn’t load the schedule</strong>' +
+            'Check your connection and try again.<br><button class="btn" id="retry">Try again</button></div>';
           $("retry").onclick = function () { load(date, opts); };
         } else {
-          showNotice("Couldn’t refresh just now, so this may be out of date. " + '<button id="retryNotice">Try again</button>');
+          showNotice("Couldn’t refresh just now, so this may be out of date." + '<button id="retryNotice">Try again</button>');
           $("retryNotice").onclick = function () { showNotice(""); load(date, opts); };
         }
       });
@@ -734,10 +675,9 @@
     state.explicitWeek = !!opts.explicit;
     if (opts.resetDay) state.day = null;
     showNotice(opts.explicit && data.week !== mon
-      ? "The week of " + MONTHS[parseYmd(mon).getMonth()] + " " + parseYmd(mon).getDate() +
-        " isn’t on the schedule sheet yet, so this is the latest posted week."
+      ? "The week of " + monthDay(mon) + " isn’t posted yet, so this is the latest week."
       : week.staffed && !week.posted
-      ? "This week is still being put together. Here’s what’s filled in so far."
+      ? "This week is still being put together, so some classes may be missing."
       : "");
     syncUrl();
     render();
@@ -747,12 +687,16 @@
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    if (t.dataset.coach !== undefined) {
-      var name = t.dataset.coach;
-      var same = state.coach && state.coach.toLowerCase() === name.toLowerCase();
-      state.coach = same && t.classList.contains("chip") ? null : name;   // chip toggles, name in a card selects
+    if (t.id === "tabDay" || t.id === "tabMine") {
+      state.view = t.id === "tabDay" ? "day" : "mine";
+      state.picking = false;
+      store("view", state.view);
       syncUrl(); render();
-      if (state.coach) $("mine").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (t.dataset.day !== undefined) {
+      state.day = Number(t.dataset.day);
+      renderDayView();
+      var top = $("dayView").getBoundingClientRect().top + window.scrollY;
+      if (window.scrollY > top) window.scrollTo({ top: top });
     } else if (t.dataset.type !== undefined) {
       var ty = t.dataset.type;
       if (!ty) state.types = [];
@@ -760,27 +704,26 @@
         var i = state.types.indexOf(ty);
         if (i >= 0) state.types.splice(i, 1); else state.types.push(ty);
       }
-      store("types", state.types);
-      render();
-    } else if (t.dataset.day !== undefined) {
-      state.day = Number(t.dataset.day);
-      renderBoard();
-    } else if (t.id === "showAll") {
-      state.coach = null; syncUrl(); render();
-    } else if (t.id === "refresh") {
+      renderDayView();
+    } else if (t.dataset.me !== undefined) {
+      state.me = t.dataset.me;
+      state.picking = false;
+      store("me", state.me);
+      syncUrl(); render();
+      window.scrollTo({ top: 0 });
+    } else if (t.id === "changeMe") {
+      state.picking = true; render();
+    } else if (t.id === "cancelPick") {
+      state.picking = false; render();
+    } else if (t.id === "refresh" && state.data) {
       load(state.data.week, { explicit: state.explicitWeek });
     } else if (t.id === "goCurrent") {
-      load(ymd(new Date()), { resetDay: true });
+      load(today(), { resetDay: true });
     } else if ((t.id === "prevWeek" || t.id === "nextWeek") && state.data) {
       load(addDays(state.data.week, t.id === "prevWeek" ? -7 : 7), { explicit: true, resetDay: true });
     }
   });
 
-  $("coachSelect").addEventListener("change", function () {
-    state.coach = this.value || null;
-    syncUrl(); render();
-  });
-  window.addEventListener("resize", function () { if (state.week) renderBoard(); });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible" && state.data && !state.loading &&
         Date.now() - state.fetchedAt > 3 * 60 * 1000) {
@@ -790,9 +733,15 @@
 
   // ── Start ──
   var params = new URLSearchParams(location.search);
-  state.coach = params.get("coach") || null;
-  var savedTypes = recall("types");
-  if (Array.isArray(savedTypes)) state.types = savedTypes.filter(function (t) { return TYPES[t]; });
+  var linkCoach = params.get("coach");
+  if (linkCoach) {                     // personal link: …/schedule/?coach=Name
+    state.me = linkCoach; state.view = "mine";
+    store("me", linkCoach); store("view", "mine");
+  } else {
+    state.me = recall("me");
+    state.view = recall("view") === "mine" ? "mine" : "day";
+  }
+  renderChrome();
   var start = params.get("week");
   if (start && /^\d{4}-\d{2}-\d{2}$/.test(start)) {
     load(start, { explicit: true });
