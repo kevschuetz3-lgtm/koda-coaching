@@ -1,17 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#0f1115">
   <title>Koda Coaching Schedule</title>
+  <script>
+    // Dark by default; "Light mode" at the bottom of the page switches it for this device
+    try {
+      var savedTheme = JSON.parse(localStorage.getItem("koda-sched:theme"));
+      if (savedTheme === "light" || savedTheme === "dark") document.documentElement.setAttribute("data-theme", savedTheme);
+    } catch (e) {}
+  </script>
   <style>
     :root {
+      color-scheme: light;
       --bg: #ffffff;
       --band: #f4f5f7;
       --seg: #eceef2;
+      --seg-sel: #ffffff;
       --text: #15171c;
       --muted: #5d6470;
       --faded: #8b919b;
@@ -20,7 +28,29 @@
       --on-strong: #ffffff;
       --accent: #1d4ed8;
       --needs: #b42318;
+      --today-line: rgba(29, 78, 216, 0.45);
+      --mine: #15171c;
+      --mine-past: rgba(21, 23, 28, 0.3);
       --warn-bg: #fff6db; --warn-text: #5c4300; --warn-line: #f0d98a;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --band: #181b21;
+      --seg: #1d2128;
+      --seg-sel: #2e343e;
+      --text: #eceef2;
+      --muted: #9aa3af;
+      --faded: #6b7280;
+      --line: #2a2f37;
+      --strong: #eceef2;
+      --on-strong: #0f1115;
+      --accent: #7ea6ff;
+      --needs: #ff8a80;
+      --today-line: rgba(126, 166, 255, 0.6);
+      --mine: #eceef2;
+      --mine-past: rgba(236, 238, 242, 0.3);
+      --warn-bg: #2d2511; --warn-text: #f3d98b; --warn-line: #574719;
     }
 
     /* Program colors: a see-through wash of each program's color (--rgb at --a opacity) */
@@ -32,6 +62,15 @@
     .p-comp     { --rgb: 249, 115, 22;  --a: 0.18; --ink: #9a3412; }
     .p-opengym, .p-other { --rgb: 100, 116, 139; --a: 0.14; --ink: #334155; }
     .p-kratos   { --rgb: 239, 68, 68;   --a: 0.16; --ink: #991b1b; }
+    /* on a dark page the washes need a little more color and the labels a lighter shade */
+    :root[data-theme="dark"] .p-crossfit { --a: 0.22; --ink: #9db8ff; }
+    :root[data-theme="dark"] .p-hyrox    { --a: 0.24; --ink: #f5d76e; }
+    :root[data-theme="dark"] .p-kodafit  { --a: 0.22; --ink: #f9a8d4; }
+    :root[data-theme="dark"] .p-womens   { --a: 0.24; --ink: #c4b5fd; }
+    :root[data-theme="dark"] .p-kids     { --a: 0.20; --ink: #86efac; }
+    :root[data-theme="dark"] .p-comp     { --a: 0.22; --ink: #fdba74; }
+    :root[data-theme="dark"] .p-opengym, :root[data-theme="dark"] .p-other { --a: 0.24; --ink: #cbd5e1; }
+    :root[data-theme="dark"] .p-kratos   { --a: 0.22; --ink: #fca5a5; }
     .prog { background: rgba(var(--rgb), var(--a)); }
     .prog.past { background: rgba(var(--rgb), calc(var(--a) * 0.4)); color: var(--faded); }
     .prog.past .pl, .prog.past .c { color: var(--faded); }
@@ -87,7 +126,7 @@
       padding: 10px 8px; font-weight: 600; color: var(--muted); white-space: nowrap;
     }
     .views button[aria-selected="true"] {
-      background: var(--bg); color: var(--text);
+      background: var(--seg-sel); color: var(--text);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
     }
 
@@ -132,6 +171,7 @@
     }
     .chip[aria-pressed="true"] { background: var(--strong); border-color: var(--strong); color: var(--on-strong); font-weight: 600; }
     .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; background: rgba(var(--rgb), 0.55); }
+    :root[data-theme="dark"] .swatch { background: rgba(var(--rgb), 0.85); }
 
     .rotate-hint { display: none; color: var(--muted); font-size: 14px; margin-top: 10px; }
     @media (max-width: 639px) and (orientation: portrait) { .rotate-hint { display: block; } }
@@ -196,11 +236,11 @@
     .grid .who-c { color: var(--muted); font-weight: 400; font-size: 13px; }
     /* today's column: header in blue, thin blue lines down both sides */
     .grid thead th.today { color: var(--accent); }
-    .grid .today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45); }
-    .grid thead th.today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45), 0 1px 0 var(--line); }
+    .grid .today { box-shadow: inset 2px 0 0 var(--today-line), inset -2px 0 0 var(--today-line); }
+    .grid thead th.today { box-shadow: inset 2px 0 0 var(--today-line), inset -2px 0 0 var(--today-line), 0 1px 0 var(--line); }
     /* the remembered coach's classes: bold outline around the whole cell */
-    .grid td.mine-cell, .row.mine-cell { box-shadow: inset 0 0 0 2.5px var(--strong); }
-    .grid td.mine-cell.past, .row.mine-cell.past { box-shadow: inset 0 0 0 2.5px rgba(21, 23, 28, 0.3); }
+    .grid td.mine-cell, .row.mine-cell { box-shadow: inset 0 0 0 2.5px var(--mine); }
+    .grid td.mine-cell.past, .row.mine-cell.past { box-shadow: inset 0 0 0 2.5px var(--mine-past); }
     .tlabel {
       display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--accent);
@@ -217,7 +257,7 @@
 
     .strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
     .sday { border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-height: 110px; }
-    .sday.today { border: 2px solid rgba(29, 78, 216, 0.45); }
+    .sday.today { border: 2px solid var(--today-line); }
     .sday h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; text-align: center; }
     .sday h3 b { font-size: 18px; }
     .si { margin-top: 6px; padding: 7px 6px; border-radius: 8px; font-size: 14px; text-align: center; }
@@ -328,7 +368,7 @@
 
     <footer>
       <span id="status"></span>
-      <div style="margin-top:6px"><a href="../">Submit your availability</a></div>
+      <div style="margin-top:6px"><a href="../">Submit your availability</a> · <button id="themeToggle"></button></div>
     </footer>
   </div>
 
@@ -921,6 +961,10 @@
       state.picking = true; render();
     } else if (t.id === "cancelPick") {
       state.picking = false; render();
+    } else if (t.id === "themeToggle") {
+      var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      store("theme", next);
+      applyTheme(next);
     } else if (t.id === "refresh" && state.data) {
       load(state.data.week, { explicit: state.explicitWeek });
     } else if (t.id === "goCurrent") {
@@ -941,6 +985,14 @@
       load(state.data.week, { explicit: state.explicitWeek });
     }
   });
+
+  // ── Theme (dark by default, chosen per device) ──
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", theme === "dark" ? "#0f1115" : "#ffffff");
+    $("themeToggle").textContent = theme === "dark" ? "Light mode" : "Dark mode";
+  }
+  applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
 
   // ── Start ──
   var params = new URLSearchParams(location.search);
