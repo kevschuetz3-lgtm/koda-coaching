@@ -198,6 +198,9 @@
     .grid thead th.today { color: var(--accent); }
     .grid .today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45); }
     .grid thead th.today { box-shadow: inset 2px 0 0 rgba(29, 78, 216, 0.45), inset -2px 0 0 rgba(29, 78, 216, 0.45), 0 1px 0 var(--line); }
+    /* the remembered coach's classes: bold outline around the whole cell */
+    .grid td.mine-cell, .row.mine-cell { box-shadow: inset 0 0 0 2.5px var(--strong); }
+    .grid td.mine-cell.past, .row.mine-cell.past { box-shadow: inset 0 0 0 2.5px rgba(21, 23, 28, 0.3); }
     .tlabel {
       display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--accent);
@@ -609,7 +612,8 @@
   function gridCellHtml(c, date, isToday) {
     var who = c.canceled ? (c.coaches.length ? "<s>" + namesHtml(c.coaches) + "</s> " : "") + '<span class="who-c">Canceled</span>'
       : c.needsCoach ? '<span class="needs">Needs coach</span>' : namesHtml(c.coaches);
-    return '<td class="prog p-' + c.type + (isPast(c, date) ? " past" : "") + (isToday ? " today" : "") + '"' +
+    var mine = state.me && isMine(c, state.me.toLowerCase());
+    return '<td class="prog p-' + c.type + (isPast(c, date) ? " past" : "") + (isToday ? " today" : "") + (mine ? " mine-cell" : "") + '"' +
       (c.end !== null ? ' title="' + fmt(c.start) + "–" + fmt(c.end) + '"' : "") + '>' +
       (c.type === "crossfit" ? "" : '<span class="pl">' + esc(c.title) + '</span>') +
       (who ? '<span class="n">' + who + '</span>' : "") + '</td>';
@@ -648,7 +652,7 @@
     });
     html += '</tbody></table><p class="grid-note">Each color is a class type (see the buttons above)' +
       (w.monday <= t ? " · faded classes already happened" : "") +
-      (state.me ? ' · <span class="me">' + esc(state.me) + '</span> is underlined' : "") + '</p>';
+      (state.me ? " · " + esc(state.me) + "’s classes are outlined" : "") + '</p>';
     return html;
   }
 
@@ -662,7 +666,8 @@
     }
     else if (c.needsCoach) who = '<span class="who needs">Needs a coach</span>';
     else who = '<span class="who">' + namesHtml(c.coaches) + '</span>';
-    return '<li class="row prog p-' + c.type + (past ? " past" : "") + (c.canceled ? " canceled" : "") + '">' +
+    var mine = !meKey && state.me && isMine(c, state.me.toLowerCase());   // outline only in the full schedule
+    return '<li class="row prog p-' + c.type + (past ? " past" : "") + (c.canceled ? " canceled" : "") + (mine ? " mine-cell" : "") + '">' +
       '<span class="t">' + (c.start !== null ? fmt(c.start) : "") + '</span>' +
       '<span class="c">' + esc(c.title) + (c.end !== null ? '<span class="sub">until ' + fmt(c.end) + '</span>' : "") + '</span>' +
       who + '</li>';
