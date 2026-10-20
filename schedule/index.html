@@ -249,7 +249,18 @@
     .grid-note { color: var(--muted); font-size: 13px; margin-top: 10px; }
 
     /* ── My classes ── */
-    .me-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 20px; }
+    .me-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 20px; }
+    .me-actions { display: flex; align-items: center; gap: 16px; }
+    .cal-btn, .cal-opt {
+      display: inline-block; border: 1px solid var(--line); background: var(--seg); color: var(--text);
+      border-radius: 10px; padding: 9px 14px; font-size: 15px; font-weight: 600; text-decoration: none;
+    }
+    .cal-btn[aria-expanded="true"] { background: var(--strong); border-color: var(--strong); color: var(--on-strong); }
+    .cal-opt:hover, .cal-btn:hover { border-color: var(--muted); }
+    .cal-panel { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 14px; }
+    .cal-lead { font-size: 15px; margin-bottom: 12px; }
+    .cal-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cal-note { color: var(--muted); font-size: 13px; margin-top: 12px; }
     .me-name { font-size: 24px; font-weight: 700; line-height: 1.2; }
     .me-sub { color: var(--muted); font-size: 15px; margin-top: 2px; }
     .link { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 6px 0; }
@@ -399,6 +410,7 @@
     view: "day",         // "day" = full schedule, "mine" = one coach's week
     me: null,            // name chosen under "My classes"
     picking: false,      // showing the name list
+    calOpen: false,      // "Add to calendar" options showing
     day: null,           // selected day in the one-day list (phones)
     types: [],           // class-type filter (empty = all)
     loading: false,
@@ -777,6 +789,23 @@
   }
 
   // ── My classes ──
+  // "Add to calendar": a calendar subscription to this coach's feed on the backend
+  // (?action=calendar&coach=Name), so new weeks and sheet edits reach their calendar on their own
+  function calPanelHtml() {
+    var feed = SCRIPT_URL + "?action=calendar&coach=" + encodeURIComponent(state.me);
+    var webcal = feed.replace(/^https:/, "webcal:");
+    var apple = '<a class="cal-opt" href="' + esc(webcal) + '">iPhone / Mac Calendar</a>';
+    var google = '<a class="cal-opt" href="https://calendar.google.com/calendar/r?cid=' + esc(encodeURIComponent(webcal)) +
+      '" target="_blank" rel="noopener">Google Calendar</a>';
+    var applePlatform = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+    return '<div class="cal-panel">' +
+      '<p class="cal-lead">Add your classes to your calendar once. New weeks and schedule changes show up on their own.</p>' +
+      '<div class="cal-opts">' + (applePlatform ? apple + google : google + apple) +
+      '<button class="cal-opt" id="copyCal" data-feed="' + esc(feed) + '">Copy calendar link</button></div>' +
+      '<p class="cal-note">Calendars check for updates on their own, usually every few hours (Google Calendar can take up to a day). ' +
+      'If the Google Calendar option doesn’t work on your phone, open this page on a computer and add it there.</p></div>';
+  }
+
   function renderMineView() {
     var w = state.week, body = $("mineBody");
     if (!w.staffed) { body.innerHTML = notPostedHtml(); return; }
@@ -802,7 +831,9 @@
     var head = '<div class="me-head"><div><div class="me-name">' + esc(state.me) + '</div>' +
       '<div class="me-sub">' + (total ? total + (total === 1 ? " class" : " classes") : "No classes") +
       " · " + weekDates(w.monday) + '</div></div>' +
-      '<button class="link" id="changeMe">Not you?</button></div>';
+      '<div class="me-actions"><button class="cal-btn" id="calBtn" aria-expanded="' + !!state.calOpen + '">Add to calendar</button>' +
+      '<button class="link" id="changeMe">Not you?</button></div></div>' +
+      (state.calOpen ? calPanelHtml() : "");
     if (!total && off.length === 7) {
       body.innerHTML = head + '<div class="empty">No classes on the schedule this week.</div>';
       return;
@@ -954,11 +985,23 @@
     } else if (t.dataset.me !== undefined) {
       state.me = t.dataset.me;
       state.picking = false;
+      state.calOpen = false;
       store("me", state.me);
       syncUrl(); render();
       window.scrollTo({ top: 0 });
+    } else if (t.id === "calBtn") {
+      state.calOpen = !state.calOpen; renderMineView();
+    } else if (t.id === "copyCal") {
+      var link = t.dataset.feed;
+      var copied = function () {
+        t.textContent = "Link copied";
+        setTimeout(function () { t.textContent = "Copy calendar link"; }, 2000);
+      };
+      var ask = function () { window.prompt("Copy this calendar link:", link); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(copied, ask);
+      else ask();
     } else if (t.id === "changeMe") {
-      state.picking = true; render();
+      state.picking = true; state.calOpen = false; render();
     } else if (t.id === "cancelPick") {
       state.picking = false; render();
     } else if (t.id === "themeToggle") {
