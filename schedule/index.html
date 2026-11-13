@@ -415,7 +415,8 @@
     types: [],           // class-type filter (empty = all)
     loading: false,
     fetchedAt: 0,
-    explicitWeek: false  // week chosen with the arrows / ?week= (kept in the URL)
+    explicitWeek: false, // week chosen with the arrows / ?week= (never kept in the address bar)
+    openedOn: null       // the day the page last picked the week itself (on opening, or coming back on a later day)
   };
   var seq = 0;           // only the latest request may render
 
@@ -891,9 +892,10 @@
   }
 
   // ── Data ──
+  // The address bar only ever keeps ?coach=, never the week, so a bookmark or home-screen
+  // icon saved after using the week arrows still opens on the current week
   function syncUrl() {
     var p = new URLSearchParams();
-    if (state.data && state.explicitWeek) p.set("week", state.data.week);
     if (state.view === "mine" && state.me) p.set("coach", state.me);
     var qs = p.toString();
     history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
@@ -960,6 +962,28 @@
     render();
   }
 
+  // This week (Sunday: next week once it's posted), and on phones today's day. Used on opening
+  // and when the page comes back on a later day. Then an old week comes down right away rather
+  // than staying up while the new one loads.
+  function openToday() {
+    var now = new Date(), t = ymd(now), sunday = now.getDay() === 0;
+    state.openedOn = t;
+    if (state.week) {
+      state.day = null;
+      var showing = state.week.monday;
+      if (showing === mondayOf(t) || (sunday && showing === addDays(t, 1))) render();
+      else clearWeek();
+    }
+    if (sunday) load(addDays(t, 1), { sundayDefault: true, resetDay: true });
+    else load(t, { resetDay: true });
+  }
+  function clearWeek() {
+    state.data = null; state.week = null;
+    showNotice("");
+    $("dayTabs").hidden = true; $("filters").hidden = true; $("rotateHint").hidden = true;
+    $("dayList").innerHTML = $("mineBody").innerHTML = '<div class="empty">Loading the schedule…</div>';
+  }
+
   // ── Events ──
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button");
@@ -1022,12 +1046,21 @@
   if (wideMQ.addEventListener) wideMQ.addEventListener("change", onLayoutChange);
   else if (wideMQ.addListener) wideMQ.addListener(onLayoutChange);
 
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible" && state.data && !state.loading &&
-        Date.now() - state.fetchedAt > 3 * 60 * 1000) {
+  // Coming back to the page. Phones keep a tab loaded for days, so on a later day it starts over
+  // on this week and today's day, like a fresh open. Same day: refresh what's showing if stale.
+  function onReturn() {
+    if (document.visibilityState !== "visible") return;
+    if (today() !== state.openedOn) { openToday(); return; }
+    if (state.data && !state.loading && Date.now() - state.fetchedAt > 3 * 60 * 1000) {
       load(state.data.week, { explicit: state.explicitWeek });
     }
-  });
+  }
+  document.addEventListener("visibilitychange", onReturn);
+  window.addEventListener("pageshow", function (e) { if (e.persisted) onReturn(); });   // back/forward cache
+  // A page left open on screen past midnight moves on to the new day as well
+  setInterval(function () {
+    if (document.visibilityState === "visible" && today() !== state.openedOn) openToday();
+  }, 60 * 1000);
 
   // ── Theme (dark by default, chosen per device) ──
   function applyTheme(theme) {
@@ -1048,13 +1081,14 @@
     state.view = recall("view") === "mine" ? "mine" : "day";
   }
   renderChrome();
+  // ?week= opens that week, but only this week or a later one. An old week in a saved link
+  // (bookmark, home-screen icon) opens on the current week instead.
   var start = params.get("week");
-  if (start && /^\d{4}-\d{2}-\d{2}$/.test(start)) {
+  if (start && /^\d{4}-\d{2}-\d{2}$/.test(start) && mondayOf(start) >= mondayOf(today())) {
+    state.openedOn = today();
     load(start, { explicit: true });
   } else {
-    var now = new Date();
-    if (now.getDay() === 0) load(addDays(ymd(now), 1), { sundayDefault: true });   // Sunday → next week
-    else load(ymd(now));
+    openToday();
   }
 })();
 </script>
