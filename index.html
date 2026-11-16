@@ -120,6 +120,17 @@
       font-weight: 700;
       text-align: center;
       margin: 16px 0 4px;
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+
+    .day-note {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fb923c;
+      text-transform: none;
+      letter-spacing: 0;
     }
 
     /* ── Grid Table ── */
@@ -516,6 +527,45 @@
     // Each override replaces the listed day(s) with a limited slot list.
     // Optional flags: noSaturday:true hides the Saturday grid (no Saturday classes that week).
     var holidaySchedules = {
+      // Kevin 2026-11-16: Thanksgiving week. Wed = regular morning/midday + only 4:00 & 5:00 PM at night;
+      // Thu = closed; Fri runs the Saturday lineup; Sat is a regular Saturday.
+      "2026-11-23": {
+        label: "Thanksgiving Week\n" +
+               "Wed 11/25: regular morning & midday classes · evening is only 4:00 PM and 5:00 PM\n" +
+               "Thu 11/26 (Thanksgiving): all classes canceled\n" +
+               "Fri 11/27 and Sat 11/28: Saturday schedule",
+        dayNotes: { 3: "Closed", 4: "Sat sched" },
+        days: {
+          2: [
+            ["5:00 AM — CrossFit",  "crossfit"],
+            ["5:00 AM — Hyrox",     "hyrox"],
+            ["5:30 AM — CrossFit",  "crossfit"],
+            ["6:00 AM — CrossFit",  "crossfit"],
+            ["6:00 AM — Hyrox",     "hyrox"],
+            ["6:30 AM — CrossFit",  "crossfit"],
+            ["7:00 AM — Hyrox",     "hyrox"],
+            ["7:45 AM — CrossFit",  "crossfit"],
+            ["8:45 AM — Kodafit",   "kodafit"],
+            ["9:00 AM — Hyrox",     "hyrox"],
+            ["9:45 AM — CrossFit",  "crossfit"],
+            ["11:00 AM — CrossFit", "crossfit"],
+            ["12:00 PM — Hyrox",    "hyrox"],
+            ["12:15 PM — CrossFit", "crossfit"],
+            ["4:00 PM — CrossFit",  "crossfit"],
+            ["5:00 PM — CrossFit",  "crossfit"]
+          ],
+          3: [],
+          4: [
+            ["6:00 AM — Hyrox",     "hyrox"],
+            ["7:00 AM — CrossFit",  "crossfit"],
+            ["8:00 AM — CrossFit",  "crossfit"],
+            ["8:00 AM — Hyrox",     "hyrox"],
+            ["9:00 AM — CrossFit",  "crossfit"],
+            ["9:00 AM — Hyrox",     "hyrox"],
+            ["10:00 AM — CrossFit", "crossfit"]
+          ]
+        }
+      },
       "2026-09-28": {
         label: "Iron Games Weekend — Friday Oct 2: last class is 12:15 PM · No classes Saturday Oct 3 or Sunday Oct 4",
         noSaturday: true,
@@ -590,11 +640,20 @@
             slots.push([h[0], h[1], pattern]);
           });
         });
+        // Drop rows no day offers any more (e.g. Friday-only 6:00 PM when Friday is overridden)
+        slots = slots.filter(function(s) { return s[2].some(function(v) { return v; }); });
         // Sort by time so the limited slots interleave naturally
         slots.sort(function(a, b) { return slotMinutes(a[0]) - slotMinutes(b[0]); });
       } else {
         banner.style.display = "none";
         banner.textContent = "";
+      }
+
+      // Day headers: a short note under the day name on holiday weeks (e.g. "Closed")
+      var dayThs = document.querySelectorAll("#weekday-grid thead th");
+      for (var hd = 0; hd < 5; hd++) {
+        var note = holiday && holiday.dayNotes && holiday.dayNotes[hd];
+        dayThs[hd + 1].innerHTML = dayNames[hd] + (note ? '<span class="day-note">' + note + '</span>' : '');
       }
 
       // Saturday grid: hidden (and its boxes cleared) when the week has no Saturday classes
